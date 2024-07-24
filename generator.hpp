@@ -202,6 +202,37 @@ OutStream::OutStream(Path& path) {
 }
 
 namespace io {
+char** __split_string_to_char_array(const char* input) {
+    char** char_array = nullptr;
+    char* cinput = const_cast<char*>(input);
+    char* token = strtok(cinput, " ");
+    int count = 0;
+
+    while (token != nullptr) {
+        char_array = (char**)realloc(char_array, (count + 1) * sizeof(char*));
+        char_array[count] = strdup(token);
+        ++count;
+        token = strtok(nullptr, " ");
+    }
+
+    char_array = (char**)realloc(char_array, (count + 1) * sizeof(char*));
+    char_array[count] = nullptr;
+    return char_array;
+}
+
+void __fake_arg(std::string args = "", bool need_seed = false) {
+    args = "generator " + args;
+    auto _fake_argvs = __split_string_to_char_array(args.c_str());
+    int _fake_argc = 0;
+    while (_fake_argvs[_fake_argc] != nullptr) {
+        ++_fake_argc;
+    }
+    if (need_seed) {
+        rnd.setSeed(_fake_argc, _fake_argvs);
+    }
+    prepareOpts(_fake_argc, _fake_argvs);
+}
+
 /**
  * @brief 初始化随机数生成器，等价于 registerGen(argc, argv, 1)
  */
@@ -217,25 +248,55 @@ void init_gen() {
     registerGen(1, __fake_argvs , 1);
 }
 
-void __write_input_file(int index, std::function<void()> func) {
+/**
+ * @brief 将标准输出重定向回控制台或终端
+ */
+void __close_output_file_to_console() {
+#ifdef _WIN32
+    freopen("CON", "w", stdout);
+#else
+    freopen("/dev/tty", "w", stdout);
+#endif
+}
+
+/**
+ * @brief 将标准输入重定向回控制台或终端
+ */
+void __close_input_file_to_console() {
+#ifdef _WIN32
+    freopen("CON", "r", stdin);
+#else
+    freopen("/dev/tty", "r", stdin);
+#endif
+}
+
+void __write_input_file(int index, std::function<void()> func, std::string format, bool need_seed) {
     std::string filename = std::to_string(index) + ".in";
     freopen(filename.c_str(), "w", stdout);
+    __fake_arg(format, need_seed);
     try {
         func();
     } catch (...) {
         __msg::__fail_msg(__msg::_err, "An exception occurred while writing the input file.");
     }
+    __close_output_file_to_console();
 }
-void __make_inputs_impl(int start, int end, std::function<void()> func) {
+void __make_inputs_impl(int start, int end, std::function<void()> func, std::string format, bool need_seed) {
     for (int i = start; i <= end; i++) {
-        __write_input_file(i, func);
+        __write_input_file(i, func, format, need_seed);
     }
 }
-void make_inputs(int start, int end, std::function<void()> func) {
-    __make_inputs_impl(start, end, func);
+void make_inputs(int start, int end, std::function<void()> func, const char* format = "", ...) {
+    FMT_TO_RESULT(format, format, _format);
+    __make_inputs_impl(start, end, func, _format, false);
 }
-void make_input(int index, std::function<void()> func) {
-    __make_inputs_impl(index, index, func);
+void make_input(int index, std::function<void()> func, const char* format = "", ...) {
+    FMT_TO_RESULT(format, format, _format);
+    __make_inputs_impl(index, index, func, _format, false);
+}
+void make_input_seed(int index, std::function<void()> func, const char* format = "", ...) {
+    FMT_TO_RESULT(format, format, _format);
+    __make_inputs_impl(index, index, func, _format, true);
 }
 /**
  * @brief 获得所有输入文件的编号
@@ -256,6 +317,8 @@ void __write_output_file(int index, std::function<void()> std_func) {
     freopen(filename_out.c_str(), "w", stdout);
     std_func();
     __msg::__success_msg(__msg::_err, std::format("Successfully create output file {}", filename_out).c_str());
+    __close_input_file_to_console();
+    __close_output_file_to_console();
 }
 /**
  * @brief 根据 std_func 生成 .out 输出文件

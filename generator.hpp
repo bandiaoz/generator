@@ -270,6 +270,9 @@ void __close_input_file_to_console() {
 #endif
 }
 
+/**
+ * @brief 根据 func 生成输入文件，编号为 index，并检查输入文件非空
+ */
 void __write_input_file(int index, std::function<void()> func, std::string format, bool need_seed) {
     std::string filename = std::to_string(index) + ".in";
     freopen(filename.c_str(), "w", stdout);
@@ -280,20 +283,34 @@ void __write_input_file(int index, std::function<void()> func, std::string forma
         __msg::__fail_msg(__msg::_err, "An exception occurred while writing the input file.");
     }
     __close_output_file_to_console();
+
+    std::ifstream file(filename);
+    if (file.peek() == std::ifstream::traits_type::eof()) {
+        __msg::__fail_msg(__msg::_err, std::format("input file {0} is empty.", filename).c_str());
+    }
 }
 void __make_inputs_impl(int start, int end, std::function<void()> func, std::string format, bool need_seed) {
     for (int i = start; i <= end; i++) {
         __write_input_file(i, func, format, need_seed);
     }
 }
+/**
+ * @brief 根据 func 生成输入文件，编号从 start 到 end
+ */
 void make_inputs(int start, int end, std::function<void()> func, const char* format = "", ...) {
     FMT_TO_RESULT(format, format, _format);
     __make_inputs_impl(start, end, func, _format, false);
 }
+/**
+ * @brief 根据 func 生成输入文件，编号为 index
+ */
 void make_input(int index, std::function<void()> func, const char* format = "", ...) {
     FMT_TO_RESULT(format, format, _format);
     __make_inputs_impl(index, index, func, _format, false);
 }
+/**
+ * @brief 根据 func 生成输入文件，编号为 index，同时使用随机种子
+ */
 void make_input_seed(int index, std::function<void()> func, const char* format = "", ...) {
     FMT_TO_RESULT(format, format, _format);
     __make_inputs_impl(index, index, func, _format, true);
@@ -316,20 +333,41 @@ void __write_output_file(int index, std::function<void()> std_func) {
     freopen(filename_in.c_str(), "r", stdin);
     freopen(filename_out.c_str(), "w", stdout);
     std_func();
-    __msg::__success_msg(__msg::_err, std::format("Successfully create output file {}", filename_out).c_str());
     __close_input_file_to_console();
     __close_output_file_to_console();
 }
 /**
- * @brief 根据 std_func 生成 .out 输出文件
+ * @brief 返回 index.out 文件的第一行，最大长度为 LENGTH
  */
-void fill_outputs(std::function<void()> std_func, bool cover_exist = true) {
+std::string __first_line_output(int index, int LENGTH) {
+    std::string first_line_output;
+    std::ifstream file(std::to_string(index) + ".out");
+    std::getline(file, first_line_output);
+    if (first_line_output.empty()) {
+        __msg::__fail_msg(__msg::_err, std::format("output file {0}.out is empty.", index).c_str());
+    } else if (first_line_output.size() > LENGTH) {
+        first_line_output = first_line_output.substr(0, LENGTH) + "...";
+    }
+    return first_line_output;
+}
+/**
+ * @brief 根据 std_func 生成 .out 输出文件
+ * @param std_func 使用标准输入和标准输出，注意使用 std::endl 而不是 '\n'
+ * @param LENGTH 第一行的最大的展示长度
+ * @param cover_exist 是否覆盖已存在的输出文件
+ */
+void fill_outputs(std::function<void()> std_func, int LENGTH = 20, bool cover_exist = true) {
     std::vector<int> inputs = __get_inputs();
     for (int i : inputs) {
         if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
             continue;
         }
-        __write_output_file(i, std_func);
+        try {
+            __write_output_file(i, std_func);
+            __msg::__success_msg(__msg::_err, std::format("{0}.out: {1}", i, __first_line_output(i, LENGTH)).c_str());
+        }  catch (...) {
+            __msg::__fail_msg(__msg::_err, "An exception occurred while creating the output file.");
+        }
     }
 }
 /**
@@ -348,8 +386,10 @@ void __compile(std::string filename) {
     }
 }
 /**
- * @brief 根据 std.cpp 生成 .out 输出文件，并展示第一行
+ * @brief 根据 std 生成 .out 输出文件，并展示第一行
+ * @param filename std 程序的文件名，例如 std.cpp
  * @param LENGTH 第一行的最大的展示长度
+ * @param cover_exist 是否覆盖已存在的输出文件
  */
 void fill_outputs(std::string filename, int LENGTH = 20, bool cover_exist = true) {
     std::vector<int> inputs = __get_inputs();
@@ -359,21 +399,10 @@ void fill_outputs(std::string filename, int LENGTH = 20, bool cover_exist = true
         if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
             continue;
         }
-        std::string command = std::format("./{0} < {1}.in > {1}.out", prefix, i);
         try {
+            std::string command = std::format("./{0} < {1}.in > {1}.out", prefix, i);
             system(command.c_str());
-            std::string first_line_output;
-            {
-                std::ifstream file(std::to_string(i) + ".out");
-                std::getline(file, first_line_output);
-                if (first_line_output.empty()) {
-                    __msg::__fail_msg(__msg::_err, "The output file is empty.");
-                } else if (first_line_output.size() > LENGTH) {
-                    first_line_output = first_line_output.substr(0, LENGTH) + "...";
-                }
-            }
-            // 成功消息，输出第一行
-            __msg::__success_msg(__msg::_err, std::format("{0}.out: {1}", i, first_line_output).c_str());
+            __msg::__success_msg(__msg::_err, std::format("{0}.out: {1}", i, __first_line_output(i, LENGTH)).c_str());
         } catch (...) {
             __msg::__fail_msg(__msg::_err, "An exception occurred while creating the output file.");
         }

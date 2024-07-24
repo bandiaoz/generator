@@ -62,6 +62,14 @@ void rand_string() {
     std::cout << rand_string(5, 10, "[abcd]") << std::endl;
 }
 
+void rand_vector() {
+    std::vector a{1, 3, 3, 4, 8};
+    auto b = shuffle_index(a);
+    for (auto i : b) {
+        std::cerr << i << " ";
+    }
+}
+
 int main() {
     init_gen();
 
@@ -71,7 +79,9 @@ int main() {
 
     // rand_char_test();
 
-    rand_string();
+    // rand_string();
+
+    rand_vector();
 
     return 0;
 }

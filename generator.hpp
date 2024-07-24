@@ -794,14 +794,14 @@ namespace rand_vector {
  * @brief 生成长度为 n 的随机排列，元素范围为 [0, n)，等价于 rnd.perm(n)
  */
 template <typename T>
-std::vector<T> rand_p(T n){
+std::vector<T> rand_p(T n) {
     return rnd.perm(n, T(0));
 }
 /**
  * @brief 生成长度为 n 的随机排列，元素范围为 [s, s + n)，等价于 rnd.perm(n, s)
  */
 template <typename T, typename E>
-std::vector<E> rand_p(T n, E s = 0){
+std::vector<E> rand_p(T n, E s = 0) {
     return rnd.perm(n, s);
 }
 /**
@@ -874,11 +874,21 @@ bool __rand_large_sum(std::vector<T> &v, T &sum, T limit) {
  */
 template<typename T>
 std::vector<T> rand_sum(int size, T sum, T from, T to) {
-    assert(size >= 0);
-    assert(from <= to);
-    assert(from * size <= sum && sum <= to * size);
+    if (size < 0) {
+        __msg::__fail_msg(__msg::_err, "Size of the vector can't less than zero.");
+    } else if (size > 10000000) {
+        __msg::__warn_msg(__msg::_err, std::format("Size of the vector is too large: {0}.", size).c_str());
+    }
+    if (from > to) {
+        __msg::__fail_msg(__msg::_err, std::format("The range [{0}, {1}] is invalid.", from, to).c_str());
+    }
+    if (sum < from * size || sum > to * size) {
+        __msg::__fail_msg(__msg::_err, std::format("Sum of the vector is in range [%s,%s], but need sum = %s.", from * size, to * size, sum).c_str());
+    }
     if (size == 0) {
-        assert(sum == 0);
+        if (sum != 0) {
+            __msg::__fail_msg(__msg::_err, "Size of the vector is zero, but sum is not zero.");
+        }
         return std::vector<T>();
     }
 
@@ -903,10 +913,14 @@ std::vector<T> rand_sum(int size, T sum, T from, T to) {
 
     T result_sum = 0;
     for (int i = 0; i < size; i++) {
-        assert(v[i] >= from && v[i] <= to);
+        if (v[i] < from || v[i] > to) {
+            __msg::__error_msg(__msg::_err, std::format("The {0}{1} element is out of range [{2}, {3}].", v[i], englishEnding(i + 1), from, to).c_str());
+        }
         result_sum += v[i];
     }
-    assert(result_sum == ask_sum);
+    if (result_sum != ask_sum) {
+        __msg::__error_msg(__msg::_err, std::format("The sum of the vector is {0}, but need sum = {1}.", result_sum, ask_sum).c_str());
+    }
     return v;
 }
 /**
@@ -952,6 +966,10 @@ std::vector<int> shuffle_index(Iter begin, Iter end, int offset = 0) {
     return res;
 }
 
+/**
+ * @brief 生成长度为 sum(v[i]) 的随机整数数组，每个元素 i + offset 的个数为 v[i]
+ * @example shuffle_index({1, 2, 3}, 1) -> {1, 2, 2, 3, 3, 3}
+ */
 std::vector<int> shuffle_index(std::vector<int> v, int offset = 0) {
     return shuffle_index(v.begin(), v.end(), offset);
 }

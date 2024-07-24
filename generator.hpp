@@ -415,6 +415,7 @@ namespace rand_numeric {
 
 /**
  * @brief 生成 [0, n) 范围内的随机整数，等价于 rnd.next(n)
+ * @tparam T 整数类型
  */
 template <typename T = int>
 typename std::enable_if<std::is_integral<T>::value, T>::type 
@@ -422,6 +423,10 @@ rand_int(T n) {
     return rnd.next(n);
 }
 
+/**
+ * @brief 生成 [from, to] 范围内的随机整数，等价于 rnd.next(from, to)
+ * @tparam T 要求是一个整数类型
+ */
 template <typename T = int>
 typename std::enable_if<std::is_integral<T>::value, T>::type
 rand_int(T from, T to) {
@@ -430,6 +435,7 @@ rand_int(T from, T to) {
 
 /**
  * @brief 生成给定范围 [from, to] 内的随机整数，等价于 rnd.next(from, to)
+ * @tparam T 和 U 都要求可以转换为 long long 类型
  */
 template <typename T = long long, typename U = long long>
 typename std::enable_if<
@@ -450,6 +456,9 @@ std::pair<long long, long long> __format_to_int_range(std::string s) {
         std::string str = s.substr(from + 1, to - from - 1);
         return std::stoll(str);
     };
+    if (open == std::string::npos || close == std::string::npos || comma == std::string::npos) {
+        __msg::__fail_msg(__msg::_err, std::format("{} is an invalid format. Example: [1, 10)", s).c_str());
+    }
     assert(open != std::string::npos && close != std::string::npos && comma != std::string::npos);
     long long left = string_to_int(open, comma);
     long long right = string_to_int(comma, close);
@@ -463,7 +472,10 @@ std::pair<long long, long long> __format_to_int_range(std::string s) {
 }
 
 /**
- * @brief 生成给定范围内的随机整数
+ * @brief 生成给定范围内的随机整数，格式为 "[from, to]"
+ * @param format 格式字符串，例如 "[1, 10)"
+ * @note 注意，如果 from 和 to 是小数类型，会先强制转换再判断括号的开闭；
+ * @note 例如 rand_int("[1.0, 10.2)") 会生成 [1, 10) 范围内的随机整数，不会生成 10。
  */
 long long rand_int(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
@@ -483,16 +495,15 @@ rand_odd(T from, U to) {
     long long l = (froml + (froml % 2 == 0) - 1) / 2;
     long long r = (tol - (tol % 2 == 0) - 1) / 2;
     if (l > r) {
-        __msg::__fail_msg(__msg::_err, "There is no odd number between [%lld, %lld].", froml, tol);
+        __msg::__fail_msg(__msg::_err, std::format("There is no odd number between [{0}, {1}].", froml, tol).c_str());
     }
-    assert(l <= r);
     return 2 * rnd.next(l, r) + 1;
 }
 
 /**
  * @brief 生成给定范围内的随机奇数
  */
-long long rand_odd(const char* format,...) {
+long long rand_odd(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     std::pair<long long, long long> range = __format_to_int_range(_format);
     long long x = rand_odd(range.first, range.second);
@@ -504,23 +515,24 @@ long long rand_odd(const char* format,...) {
  */
 template <typename T = long long, typename U = long long>
 typename std::enable_if<std::is_integral<T>::value && std::is_integral<U>::value, long long>::type
-rand_even(T from, U to){
+rand_even(T from, U to) {
     long long froml = (long long)from;
     long long tol = (long long)to;
     long long l = (froml + std::abs(froml % 2)) / 2;
     long long r = (tol - std::abs(tol % 2)) / 2;
-    assert(l <= r);
+    if (l > r) {
+        __msg::__fail_msg(__msg::_err, std::format("There is no even number between [{0}, {1}].", froml, tol).c_str());
+    }
     return 2 * rnd.next(l, r);
 }
 
 /**
  * @brief 生成给定范围内的随机偶数
  */
-long long rand_even(const char* format,...) {
+long long rand_even(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     std::pair<long long, long long> range = __format_to_int_range(_format);
-    long long x = rand_even(range.first,range.second);
-    return x;
+    return rand_even(range.first, range.second);
 }
 
 /**
@@ -538,15 +550,33 @@ double __change_to_double(T n){
         _n = n;
     } else if (std::is_convertible<T, double>::value){
         _n = static_cast<double>(n);
+        __msg::__warn_msg(__msg::_err, "Input is not a real number, change it to %lf. Please ensure it's correct.", _n);
     } else {
-        assert(false);
+        __msg::__fail_msg(__msg::_err, "Input is not a real number, and can't be changed to it.");
     }
     return _n;
 }
+
+/**
+ * @brief 生成 [0, 1) 范围内的随机实数，等价于 rnd.next()
+ */
+double rand_real() {
+    return rnd.next();
+}
+/**
+ * @brief 生成 [0, n) 范围内的随机实数
+ * @tparam T 浮点类型或者可以转换为 double 类型
+ */
+template <typename T = double>
+double rand_real(T n) {
+    double _n = __change_to_double(n);
+    return rnd.next(_n);
+}
 /**
  * @brief 生成给定范围内 [from, to) 的随机实数
+ * @tparam T 和 U 都要求是浮点类型或者可以转换为 double 类型
  */
-template <typename T = double,typename U = double>
+template <typename T = double, typename U = double>
 typename std::enable_if<is_double_valid<T>() && is_double_valid<U>(), double>::type
 rand_real(T from, U to) {
     double _from = __change_to_double(from);
@@ -580,18 +610,19 @@ std::pair<double, double> __format_to_double_range(std::string s) {
     return std::pair(left, right);
 }
 
-// return a real number satisfied the given range
-// can use format like [from,to],(from,to),[from,to),(from,to]
-// the accuracy is equal to the max digits of from/to
+/**
+ * @brief 生成给定范围内的随机实数，格式为 "[from, to]", "[from, to)"
+ * @param format 格式字符串，可以使用科学计数法，例如 "[1e-2, 1E2)"
+ */
 double rand_real(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     std::pair<double,double> range = __format_to_double_range(_format);
-    return rnd.next(range.first,range.second);
+    return rnd.next(range.first, range.second);
 }
 
 /**
  * @brief 根据概率选择一个元素
- * @param map 一个 map 或 unordered_map 容器，其 value 类型必须为整数，表示 key 有 value / sum(value) 的概率被选中
+ * @param map 一个 map 或 unordered_map 容器，其 value 类型必须为整数，表示每个 key 有 value / sum(value) 的概率被选中
  * @return 选中的元素
  */
 template <typename Con>

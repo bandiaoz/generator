@@ -677,13 +677,18 @@ char rand_char(CharType type = LowerLetter) {
     std::string s = rnd.next(_PATTERN[type]);
     return s.c_str()[0];
 }
-// return a char use testlib format
-char rand_char(const char* format,...) {
+/**
+ * @brief 生成一个随机字符，字符类型由极简正则表达式 format 指定
+ */
+char rand_char(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     std::string s = rnd.next(_format);
     assert(!s.empty());
     return s.c_str()[0];
 }
+/**
+ * @brief 生成一个随机字符，字符类型由极简正则表达式 format 指定
+ */
 char rand_char(std::string format) {
     return rand_char(format.c_str());
 }
@@ -700,7 +705,7 @@ std::string rand_string(int from, int to, CharType type = LowerLetter) {
     return rnd.next("%s{%d,%d}", _PATTERN[type].c_str(), from, to);
 }
 /**
- * @brief 生成长度为 n 的随机字符串，字符类型由 format 指定
+ * @brief 生成长度为 n 的随机字符串，字符类型由极简正则表达式 format 指定
  */
 std::string rand_string(int n, const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
@@ -708,23 +713,35 @@ std::string rand_string(int n, const char* format, ...) {
     return s;
 }
 /**
- * @brief 生成长度为 [from, to] 的随机字符串，字符类型由 format 指定
+ * @brief 生成长度为 [from, to] 的随机字符串，字符类型由极简正则表达式 format 指定
  */
 std::string rand_string(int from, int to, const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     std::string s = rnd.next("%s{%d,%d}", _format.c_str(), from, to);
     return s;
 }
+/**
+ * @brief 生成长度为 n 的随机字符串，字符类型由极简正则表达式 format 指定
+ */
 std::string rand_string(int n, std::string format) {
     return rand_string(n, format.c_str());
 }
+/**
+ * @brief 生成长度为 [from, to] 的随机字符串，字符类型由极简正则表达式 format 指定
+ */
 std::string rand_string(int from, int to, std::string format) {
     return rand_string(from, to, format.c_str());
 }
+/**
+ * @brief 根据极简正则表达式 format 生成随机字符串
+ */
 std::string rand_string(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     return rnd.next(_format);
 }
+/**
+ * @brief 根据极简正则表达式 format 生成随机字符串
+ */
 std::string rand_string(std::string format) {
     return rnd.next(format);
 }
@@ -745,8 +762,7 @@ std::string __rand_palindrome_impl(int n, int p, std::string char_type) {
     for (int i = 0; i < n; i++) {
         if (i < pos_l || i > pos_r) {
             result[i] = rand_char(char_type);
-        }
-        else {
+        } else {
             result[i] = palindrome_part[i - pos_l];
         }
     }
@@ -759,14 +775,14 @@ std::string rand_palindrome(int n, int p, CharType type = LowerLetter) {
     return __rand_palindrome_impl(n, p, _PATTERN[type]);
 }
 /**
- * @brief 生成长度为 n 的随机回文串，包含长度至少为 p 的回文子串，字符类型由 format 指定
+ * @brief 生成长度为 n 的随机回文串，包含长度至少为 p 的回文子串，字符类型由极简正则表达式 format 指定
  */
 std::string rand_palindrome(int n, int p, const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     return __rand_palindrome_impl(n, p, _format);
 }
 /**
- * @brief 生成长度为 n 的随机回文串，包含长度至少为 p 的回文子串，字符类型由 format 指定
+ * @brief 生成长度为 n 的随机回文串，包含长度至少为 p 的回文子串，字符类型由极简正则表达式 format 指定
  */
 std::string rand_palindrome(int n, int p, std::string format) {
     return __rand_palindrome_impl(n, p, format);

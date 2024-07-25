@@ -116,7 +116,13 @@ void __error_msg(OutStream& out, const char* msg, Args... args) {
     exit(EXIT_FAILURE);
 }
 
-char _path_split = '/';
+#ifdef WIN32
+    char _path_split = '\\';
+    char _other_split = '/';
+#else
+    char _path_split = '/';
+    char _other_split = '\\';
+#endif
 
 template <typename U> struct IsPath;
 class Path {
@@ -138,17 +144,36 @@ public:
         std::ifstream f(_path);
         return f.is_open();
     }
-    bool __directory_exists(){
+    bool __directory_exists() {
+    #ifdef _WIN32
+        struct _stat path_stat;
+        if (_stat(_path.c_str(), &path_stat) != 0) {
+            return false;
+        }
+        return (path_stat.st_mode & _S_IFDIR) != 0;
+    #else
         struct stat path_stat;
         if (stat(_path.c_str(), &path_stat) != 0) {
             return false;
         }
         return S_ISDIR(path_stat.st_mode);
+    #endif
+    }
+    /**
+     * @brief 统一路径分隔符
+     */
+    void __unify_split() {
+        for (auto &c : _path) {
+            if (c == _other_split) {
+                c = _path_split;
+            }
+        }
     }
     Path __folder_path() {
         if (this->__directory_exists()) {
             return Path(_path);
         } else {
+            __unify_split();
             size_t pos = _path.find_last_of(_path_split);
             if (pos == std::string::npos) {
                 return Path("");
@@ -158,13 +183,15 @@ public:
         }
     }
     /**
-     * @brief 获得文件名，例如 /usr/local/test.cpp -> test
+     * @brief 获得文件名，不包括路径和扩展名
+     * @example 例如 /usr/local/test.cpp -> test
      */
     std::string __file_name() {
         if (!this->__file_exists()) {
             __msg::__fail_msg(__msg::_err, std::format("{0} is not a file path or the file doesn't exist.", _path).c_str());
             return "";
         }
+        __unify_split();
         size_t pos = _path.find_last_of(_path_split);
         std::string file_full_name = (pos == std::string::npos) ? _path : _path.substr(pos + 1);
         size_t pos_s = file_full_name.find_first_of('.');
@@ -175,10 +202,17 @@ public:
      * @brief 获得文件的完整的绝对路径
      */
     void full() {
+    #ifdef _WIN32
+        char buffer[MAX_PATH];
+        if (GetFullPathNameA(_path.c_str(), MAX_PATH, buffer, nullptr) == 0) {
+            __msg::__fail_msg(__msg::_err, std::format("can't find full path :{0}.", _path).c_str());
+        }
+    #else
         char buffer[1024];
         if (realpath(_path.c_str(), buffer) == nullptr) {
             __msg::__fail_msg(__msg::_err, std::format("can't find full path :{0}.", _path).c_str());
         }
+    #endif
         _path = std::string(buffer);
     }
     void __delete_file() {
@@ -189,9 +223,15 @@ public:
     template <typename T>
     Path __join_helper(const T &arg) const {
         std::string new_path = _path;
+    #ifdef _WIN32
+        if (!new_path.empty() && new_path.back() != _path_split)  {
+            new_path += _path_split;
+        }
+    #else
         if (new_path.empty() || new_path.back() != _path_split)  {
             new_path += _path_split;
         }
+    #endif
         return Path(new_path + arg);
     }
 };
@@ -3240,7 +3280,7 @@ public:
     void set_row_column(int row, int column, int ignore = 0) {
         long long node = (long long)row * (long long)column - (long long)ignore;
         if (ignore >= column) {
-            __msg::__warn_msg(__msg::_err, "The ignored nodes is large than or equal to cloumn number, will invalidate it.");
+            __msg::__warn_msg(__msg::_err, "The ignored nodes is large than or equal to column number, will invalidate it.");
         }
         if (node > 100000000) {
             __msg::__warn_msg(

@@ -15,9 +15,20 @@ def compile_cpp(file_name):
 
 
 if __name__ == "__main__":
-    os.system("rm data.zip *.in *.out")
+    # 删除之前生成的文件
+    os.system("rm data.zip || true")
+    os.system("rm *.in || true")
+    os.system("rm *.out || true")
+    os.system("rm gen || true")
 
+    # 生成输入输出文件 .in .out
     compile_cpp("gen.cpp")
-    # 生成输入输出文件 .in .out，并打包成 data.zip
     os.system("./gen")
-    os.system("rm gen")
+    
+    # 打包成 data.zip
+    os.system("zip -q data.zip *.in *.out checker.cc")
+    # 删除中间文件
+    os.system("rm gen || true")
+    os.system("rm *.in || true")
+    os.system("rm *.out || true")
+    os.system("rm starter.py || true")

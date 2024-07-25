@@ -18,8 +18,5 @@ int main() {
 
     fill_outputs("std.cpp");
 
-    system("zip -q data.zip *.in *.out checker.cc");
-    system("rm *.in *.out");
-
     return 0;
 }

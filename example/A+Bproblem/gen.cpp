@@ -32,6 +32,7 @@ int main() {
 
     // fill_outputs_exe("./std");
     show_output_first_line();
+    check_output();
 
     return 0;
 }

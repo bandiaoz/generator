@@ -24,6 +24,9 @@ if __name__ == "__main__":
     # 生成输入输出文件 .in .out
     compile_cpp("gen.cpp", path="/Users/chenjinglong/algorithm_competition/nowcoder/template/generator")
     compile_cpp("std.cpp")
+    if os.path.exists("checker.cc"):
+        compile_cpp("checker.cc", path="/Users/chenjinglong/algorithm_competition/nowcoder/template/generator")
+    
     os.system("./gen")
     
     # 打包成 data.zip
@@ -31,6 +34,7 @@ if __name__ == "__main__":
     # 删除中间文件
     os.system("rm gen || true")
     os.system("rm std || true")
+    os.system("rm checker || true")
     os.system("rm *.in || true")
     os.system("rm *.out || true")
     os.system("rm starter.py || true")

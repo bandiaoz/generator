@@ -1,20 +1,26 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-      {
-        "label": "copy starter",
-        "type": "shell",
-        "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/starter.py ${fileDirname}/starter.py"
-      },
-      {
-        "label": "Generate data",
-        "type": "shell",
-        "command": "cd ${fileDirname} && python starter.py",
-        "dependsOrder": "sequence",
-        "dependsOn": [
-          "copy starter"
-        ],
-        "problemMatcher": []
-      }
-    ]
-  }
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "copy starter.py",
+      "type": "shell",
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/starter.py ${fileDirname}/starter.py"
+    },
+    {
+      "label": "Generate data",
+      "type": "shell",
+      "command": "cd ${fileDirname} && python starter.py",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "copy starter.py"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "copy gen.cpp",
+      "type": "shell",
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/gen.cpp ${fileDirname}/gen.cpp",
+      "problemMatcher": []
+    }
+  ]
+}

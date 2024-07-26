@@ -367,6 +367,9 @@ std::vector<int> __get_inputs() {
     }
     return inputs;
 }
+/**
+ * @brief 根据 func 生成输出文件，编号为 index
+ */
 void __write_output_file(int index, std::function<void()> std_func) {
     if (!__msg::Path(std::to_string(index) + ".in").__file_exists()) {
         __msg::__fail_msg(__msg::_err, std::format("{0}.in doesn't exist.", index).c_str());
@@ -375,9 +378,93 @@ void __write_output_file(int index, std::function<void()> std_func) {
     std::string filename_out = std::to_string(index) + ".out";
     freopen(filename_in.c_str(), "r", stdin);
     freopen(filename_out.c_str(), "w", stdout);
-    std_func();
+    try {
+        std_func();
+    } catch (...) {
+        __msg::__fail_msg(__msg::_err, "An exception occurred in std code.");
+    }
     __close_input_file_to_console();
     __close_output_file_to_console();
+}
+/**
+ * @brief 根据 std_func 生成 index.out 输出文件
+ */
+void make_output(int index, std::function<void()> std_func) {
+    __write_output_file(index, std_func);
+}
+/**
+ * @brief 根据 std_func 生成 .out 输出文件，编号从 start 到 end
+ */
+void make_outputs(int start, int end, std::function<void()> std_func) {
+    for (int i = start; i <= end; i++) {
+        __write_output_file(i, std_func);
+    }
+}
+/**
+ * @brief 根据 std_func 生成 .in 对应的 .out 输出文件，
+ * @param std_func 使用标准输入和标准输出，注意使用 std::endl 而不是 '\n'
+ * @param cover_exist 是否覆盖已存在的输出文件
+ */
+void fill_outputs(std::function<void()> std_func, bool cover_exist = true) {
+    std::vector<int> inputs = __get_inputs();
+    for (int i : inputs) {
+        if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
+            continue;
+        }
+        __write_output_file(i, std_func);
+    }
+}
+/**
+ * @brief 根据 ./std 可执行文件生成 .out 输出文件
+ */
+void __make_output_exe(int index, __msg::Path std_path) {
+    std_path.full();
+    if (!std_path.__file_exists()) {
+        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
+    }
+    std::string filename_in = std::to_string(index) + ".in";
+    if (!__msg::Path(filename_in).__file_exists()) {
+        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", filename_in).c_str());
+    }
+    std::string filename_out = std::to_string(index) + ".out";
+    std::string command = std::format("{0} < {1} > {2}", std_path.path(), filename_in, filename_out);
+    if (int return_code = system(command.c_str()); return_code != 0) {
+        __msg::__fail_msg(__msg::_err, "An exception occurred while creating the output file.");
+    }
+}
+/**
+ * @brief 根据 std 可执行文件生成 index.out 输出文件
+ * @param path 可执行文件的路径，可以使用字符串或者 Path 类型
+ */
+template <typename T>
+void make_output_exe(int index, T path) {
+    __make_output_exe(index, __msg::Path(path));
+}
+/**
+ * @brief 根据 std 可执行文件生成 .out 输出文件
+ * @param path 可执行文件的路径，可以使用字符串或者 Path 类型
+ */
+template <typename T>
+void make_outputs_exe(int start, int end, T path) {
+    for (int i = start; i <= end; i++) {
+        __make_output_exe(index, __msg::Path(path));
+    }
+}
+/**
+ * @brief 根据 std 可执行文件生成所有 .in 对应的 .out 输出文件
+ * @param path 可执行文件的路径，可以使用字符串或者 Path 类型
+ * @param cover_exist 是否覆盖已存在的输出文件
+ */
+template <typename T>
+void fill_outputs_exe(T path, bool cover_exist = true) {
+    __msg::Path std_path(path);
+    std::vector<int> inputs = __get_inputs();
+    for (int i : inputs) {
+        if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
+            continue;
+        }
+        __make_output_exe(index, __msg::Path(path));
+    }
 }
 /**
  * @brief 返回 index.out 文件的第一行，最大长度为 LENGTH
@@ -394,63 +481,15 @@ std::string __first_line_output(int index, int LENGTH) {
     return first_line_output;
 }
 /**
- * @brief 根据 std_func 生成 .out 输出文件
- * @param std_func 使用标准输入和标准输出，注意使用 std::endl 而不是 '\n'
- * @param LENGTH 第一行的最大的展示长度
- * @param cover_exist 是否覆盖已存在的输出文件
+ * @brief 展示所有输出文件的第一行，最大长度为 LENGTH
+ * @param LENGTH 最大展示长度，默认为 20
  */
-void fill_outputs(std::function<void()> std_func, int LENGTH = 20, bool cover_exist = true) {
-    std::vector<int> inputs = __get_inputs();
-    for (int i : inputs) {
-        if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
-            continue;
-        }
-        try {
-            __write_output_file(i, std_func);
+void show_output_first_line(int LENGTH = 20) {
+    for (int i = 1; i <= 100; i++) {
+        if (__msg::Path(std::to_string(i) + ".out").__file_exists()) {
             __msg::__success_msg(__msg::_err, std::format("{0}.out: {1}", i, __first_line_output(i, LENGTH)).c_str());
-        }  catch (...) {
-            __msg::__fail_msg(__msg::_err, "An exception occurred while creating the output file.");
         }
     }
-}
-/**
- * @brief 编译 cpp 文件，生成同名可执行文件，例如 std.cpp -> std, checker.cc -> checker
- */
-void __compile(std::string filename) {
-    std::string prefix = filename.substr(0, filename.find("."));
-    std::string command = std::format("g++-14 ./{0} \
-        -o {1} -O2 -std=c++20 \
-        -Wl,-stack_size -Wl,0x10000000", 
-        filename, prefix
-    );
-    int return_code = system(command.c_str());
-    if (return_code != 0) {
-        __msg::__fail_msg(__msg::_err, "Compile error.");
-    }
-}
-/**
- * @brief 根据 std 生成 .out 输出文件，并展示第一行
- * @param filename std 程序的文件名，例如 std.cpp
- * @param LENGTH 第一行的最大的展示长度
- * @param cover_exist 是否覆盖已存在的输出文件
- */
-void fill_outputs(std::string filename, int LENGTH = 20, bool cover_exist = true) {
-    std::vector<int> inputs = __get_inputs();
-    __compile(filename);
-    std::string prefix = filename.substr(0, filename.find("."));
-    for (int i : inputs) {
-        if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
-            continue;
-        }
-        try {
-            std::string command = std::format("./{0} < {1}.in > {1}.out", prefix, i);
-            system(command.c_str());
-            __msg::__success_msg(__msg::_err, std::format("{0}.out: {1}", i, __first_line_output(i, LENGTH)).c_str());
-        } catch (...) {
-            __msg::__fail_msg(__msg::_err, "An exception occurred while creating the output file.");
-        }
-    }
-    system(std::format("rm {0}", prefix).c_str());
 }
 }
 

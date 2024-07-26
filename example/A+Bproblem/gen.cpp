@@ -13,10 +13,13 @@ int main() {
         int a = rand_int(1, max);
         make_input(i, [&]() {
             std::cout << a << " " << b << std::endl;
+            println(a, b);
         });
+        make_output_exe(i, "./std");
     }
 
-    fill_outputs("std.cpp");
+    // fill_outputs_exe("./std");
+    show_output_first_line();
 
     return 0;
 }

@@ -458,7 +458,7 @@ std::ifstream make_output_exe(int index, T path) {
  */
 template <typename T>
 void make_outputs_exe(int start, int end, T path) {
-    for (int i = start; i <= end; i++) {
+    for (int index = start; index <= end; index++) {
         __make_output_exe(index, __msg::Path(path));
     }
 }

@@ -388,9 +388,15 @@ void __write_output_file(int index, std::function<void()> std_func) {
 }
 /**
  * @brief 根据 std_func 生成 index.out 输出文件
+ * @return 返回输出文件的文件流
  */
-void make_output(int index, std::function<void()> std_func) {
+std::ifstream make_output(int index, std::function<void()> std_func) {
     __write_output_file(index, std_func);
+    std::ifstream file(std::to_string(index) + ".out");
+    if (!file.is_open()) {
+        __msg::__fail_msg(__msg::_err, std::format("output file {0}.out is empty.", index).c_str());
+    }
+    return file;
 }
 /**
  * @brief 根据 std_func 生成 .out 输出文件，编号从 start 到 end
@@ -429,16 +435,22 @@ void __make_output_exe(int index, __msg::Path std_path) {
     std::string filename_out = std::to_string(index) + ".out";
     std::string command = std::format("{0} < {1} > {2}", std_path.path(), filename_in, filename_out);
     if (int return_code = system(command.c_str()); return_code != 0) {
-        __msg::__fail_msg(__msg::_err, "An exception occurred while creating the output file.");
+        __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {}.", filename_out).c_str());
     }
 }
 /**
  * @brief 根据 std 可执行文件生成 index.out 输出文件
  * @param path 可执行文件的路径，可以使用字符串或者 Path 类型
+ * @return 返回输出文件的文件流
  */
 template <typename T>
-void make_output_exe(int index, T path) {
+std::ifstream make_output_exe(int index, T path) {
     __make_output_exe(index, __msg::Path(path));
+    std::ifstream file(std::to_string(index) + ".out");
+    if (!file.is_open()) {
+        __msg::__fail_msg(__msg::_err, std::format("output file {0}.out is empty.", index).c_str());
+    }
+    return file;
 }
 /**
  * @brief 根据 std 可执行文件生成 .out 输出文件
@@ -459,8 +471,8 @@ template <typename T>
 void fill_outputs_exe(T path, bool cover_exist = true) {
     __msg::Path std_path(path);
     std::vector<int> inputs = __get_inputs();
-    for (int i : inputs) {
-        if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
+    for (int index : inputs) {
+        if (!cover_exist && __msg::Path(std::to_string(index) + ".out").__file_exists()) {
             continue;
         }
         __make_output_exe(index, __msg::Path(path));

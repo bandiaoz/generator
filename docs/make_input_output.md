@@ -31,8 +31,9 @@ void make_input_seed(int index, std::function<void()> func, const char* format =
 ```cpp
 /**
  * @brief 根据 std_func 生成 index.out 输出文件
+ * @return 返回输出文件的文件流
  */
-void make_output(int index, std::function<void()> std_func);
+std::ifstream make_output(int index, std::function<void()> std_func);
 /**
  * @brief 根据 std_func 生成 .out 输出文件，编号从 start 到 end
  */
@@ -46,9 +47,10 @@ void fill_outputs(std::function<void()> std_func, bool cover_exist = true);
 /**
  * @brief 根据 std 可执行文件生成 index.out 输出文件
  * @param path 可执行文件的路径，可以使用字符串或者 Path 类型
+ * @return 返回输出文件的文件流
  */
 template <typename T>
-void make_output_exe(int index, T path);
+std::ifstream make_output_exe(int index, T path);
 /**
  * @brief 根据 std 可执行文件生成 .out 输出文件
  * @param path 可执行文件的路径，可以使用字符串或者 Path 类型

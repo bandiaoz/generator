@@ -368,6 +368,9 @@ std::vector<int> __get_inputs() {
     return inputs;
 }
 void __write_output_file(int index, std::function<void()> std_func) {
+    if (!__msg::Path(std::to_string(index) + ".in").__file_exists()) {
+        __msg::__fail_msg(__msg::_err, std::format("{0}.in doesn't exist.", index).c_str());
+    }
     std::string filename_in = std::to_string(index) + ".in";
     std::string filename_out = std::to_string(index) + ".out";
     freopen(filename_in.c_str(), "r", stdin);
@@ -385,7 +388,7 @@ std::string __first_line_output(int index, int LENGTH) {
     std::getline(file, first_line_output);
     if (first_line_output.empty()) {
         __msg::__fail_msg(__msg::_err, std::format("output file {0}.out is empty.", index).c_str());
-    } else if (first_line_output.size() > LENGTH) {
+    } else if (int(first_line_output.size()) > LENGTH) {
         first_line_output = first_line_output.substr(0, LENGTH) + "...";
     }
     return first_line_output;

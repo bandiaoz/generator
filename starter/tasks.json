@@ -4,7 +4,7 @@
       {
         "label": "copy starter",
         "type": "shell",
-        "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter.py ${fileDirname}/starter.py"
+        "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/starter.py ${fileDirname}/starter.py"
       },
       {
         "label": "Generate data",

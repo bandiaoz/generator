@@ -2,3 +2,6 @@
 .vscode
 
 *.zip
+*.in
+*.out
+*.ans

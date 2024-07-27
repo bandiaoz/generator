@@ -522,20 +522,23 @@ std::string checker_name[MaxChecker] = {
     "checker",
     "lcmp",
     "ncmp",
-    "yesno",
+    "nyesno",
     "rcmp4", 
     "rcmp6",
     "rcmp9",
     "wcmp"
 };
+int __run_checker(Path check_path, Path filename_in, Path filename_out, Path filename_answer) {
+    std::string command = std::format("{0} {1} {2} {3}", check_path.path(), filename_in.path(), filename_out.path(), filename_answer.path());
+    return system(command.c_str());
+}
 void __check_output(std::string prefix, Path check_path) {
     std::string filename_in = prefix + ".in";
     std::string filename_out = prefix + ".out";
     if (__msg::Path(filename_in).__file_exists() && __msg::Path(filename_out).__file_exists()) {
         check_path.full();
-        std::string command = std::format("{0} {1} {2} {2}", check_path.path(), filename_in, filename_out);
         std::cerr << std::format("Case {0} : ", prefix);
-        system(command.c_str());
+        __run_checker(check_path, filename_in, filename_out, filename_out);
     }
 }
 /**
@@ -550,6 +553,50 @@ void check_output() {
     checker_path.full();
     for (int i = 1; i <= 100; i++) {
         __check_output(std::to_string(i), checker_path);
+    }
+}
+/**
+ * @brief 对拍 num_case 组数据，使用 std_path 和 bf_path 两个可执行文件，checker 默认使用 lcmp
+ * @param checker_folder_path 如果使用常用 checker，需要提供所在的目录
+ */
+void compare(int num_case, std::function<void()> gen_func, Path std_path, Path bf_path, Checker checker, std::string checker_folder_path = "./") {
+    if (!std_path.__file_exists()) {
+        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
+    }
+    if (!bf_path.__file_exists()) {
+        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", bf_path.cname()).c_str());
+    }
+    std_path.full();
+    bf_path.full();
+    std::string path_str = checker_folder_path + checker_name[checker];
+    Path checker_path(path_str);
+    checker_path.full();
+    std::cerr << checker_path.path() << std::endl;
+    for (int index = 1; index <= num_case; index++) {
+        std::string filename_in = "hack.in";
+        freopen(filename_in.c_str(), "w", stdout);
+        try {
+            gen_func();
+        } catch (...) {
+            __msg::__fail_msg(__msg::_err, "An exception occurred while writing the input file.");
+        }
+        io::__close_output_file_to_console();
+
+        std::string filename_out = "hack.out";
+        std::string filename_ans = "hack.ans";
+        std::string command = std::format("{0} < {1} > {2}", std_path.path(), filename_in, filename_ans);
+        if (int return_code = system(command.c_str()); return_code != 0) {
+            __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {0}.", filename_ans).c_str());
+        }
+        command = std::format("{0} < {1} > {2}", bf_path.path(), filename_in, filename_out);
+        if (int return_code = system(command.c_str()); return_code != 0) {
+            __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {0}.", filename_out).c_str());
+        }
+
+        int return_code = __run_checker(checker_path, filename_in, filename_out, filename_ans);
+        if (return_code != 0) {
+            __msg::__fail_msg(__msg::_err, std::format("Wrong Answer in case {0}.", index).c_str());
+        }
     }
 }
 }

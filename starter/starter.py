@@ -38,7 +38,10 @@ def remove(file_names):
 
 def clear():
     # 删除所有临时文件
-    remove(["*.in", "*.out"])
+    for file_name in os.listdir("."):
+        if file_name.endswith(".in") and file_name[:-3] != "hack":
+            os.system(f"rm {file_name}")
+    remove(["*.out", "*.ans"])
     remove(cpp_files_prefix)
     cpp_files_prefix.clear()
 

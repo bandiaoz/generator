@@ -9,7 +9,12 @@ int main() {
     int a, b;
     std::cin >> a >> b;
 
-    std::cout << a + b + 1 << '\n';
+    std::srand(std::time(nullptr));
+    if (rand() % 5 == 0) {
+        std::cout << a + b + 1 << '\n';
+    } else {
+        std::cout << a + b << '\n';
+    }
 
     return 0;
 }

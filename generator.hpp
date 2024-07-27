@@ -250,12 +250,13 @@ void check_output() {
         __msg::__warn_msg(__msg::_err, "checker doesn't exist.");
         return;
     }
-    std::string command = "./checker";
+    Path checker_path("checker");
     for (int i = 1; i <= 100; i++) {
         std::string filename_in = std::to_string(i) + ".in";
         std::string filename_out = std::to_string(i) + ".out";
         if (__msg::Path(filename_in).__file_exists() && __msg::Path(filename_out).__file_exists()) {
-            std::string command = "./checker " + filename_in + " " + filename_out + " " + filename_out;
+            checker_path.full();
+            std::string command = std::format("{0} {1} {2} {2}", checker_path.path(), filename_in, filename_out);
             std::cerr << std::format("Case {0} : ", i);
             system(command.c_str());
         }

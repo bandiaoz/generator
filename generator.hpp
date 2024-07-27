@@ -241,35 +241,6 @@ OutStream::OutStream(Path& path) {
 }
 }
 
-namespace checker {
-using __msg::Path;
-void __check_output(std::string prefix, Path check_path) {
-    std::string filename_in = prefix + ".in";
-    std::string filename_out = prefix + ".out";
-    if (__msg::Path(filename_in).__file_exists() && __msg::Path(filename_out).__file_exists()) {
-        check_path.full();
-        std::string command = std::format("{0} {1} {2} {2}", check_path.path(), filename_in, filename_out);
-        std::cerr << std::format("Case {0} : ", prefix);
-        system(command.c_str());
-    }
-}
-/**
- * @param 如果当前目录有 ./checker 可执行文件，判断输出是否正确
- */
-void check_output() {
-    if (!__msg::Path("checker").__file_exists()) {
-        __msg::__warn_msg(__msg::_err, "checker doesn't exist.");
-        return;
-    }
-    Path checker_path("checker");
-    checker_path.full();
-    for (int i = 1; i <= 100; i++) {
-        __check_output(std::to_string(i), checker_path);
-    }
-}
-
-}
-
 namespace io {
 char** __split_string_to_char_array(const char* input) {
     char** char_array = nullptr;

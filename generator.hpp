@@ -507,6 +507,27 @@ void show_output_first_line(int LENGTH = 20) {
 
 namespace checker {
 using __msg::Path;
+enum Checker {
+    mycmp, // 自定义 checker
+    lcmp,
+    ncmp,
+    yesno,
+    rcmp4,
+    rcmp6,
+    rcmp9,
+    wcmp,
+    MaxChecker
+};
+std::string checker_name[MaxChecker] = {
+    "checker",
+    "lcmp",
+    "ncmp",
+    "yesno",
+    "rcmp4", 
+    "rcmp6",
+    "rcmp9",
+    "wcmp"
+};
 void __check_output(std::string prefix, Path check_path) {
     std::string filename_in = prefix + ".in";
     std::string filename_out = prefix + ".out";

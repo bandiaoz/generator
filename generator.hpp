@@ -556,18 +556,20 @@ void check_output() {
     }
 }
 /**
- * @brief 对拍 num_case 组数据，使用 std_path 和 bf_path 两个可执行文件
+ * @brief 对拍 num_case 组数据，使用 std_path 和 wa_path 两个可执行文件
+ * @param std_path 相对可信的可执行文件
+ * @param wa_path 待测的可执行文件
  * @param checker_folder_path 如果使用常用 checker，需要提供所在的目录
  */
-void compare(int num_case, std::function<void()> gen_func, Path std_path, Path bf_path, Checker checker, std::string checker_folder_path = "./") {
+void compare(int num_case, std::function<void()> gen_func, Path std_path, Path wa_path, Checker checker, std::string checker_folder_path = "./") {
     if (!std_path.__file_exists()) {
         __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
     }
-    if (!bf_path.__file_exists()) {
-        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", bf_path.cname()).c_str());
+    if (!wa_path.__file_exists()) {
+        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", wa_path.cname()).c_str());
     }
     std_path.full();
-    bf_path.full();
+    wa_path.full();
     std::string path_str = checker_folder_path + checker_name[checker];
     Path checker_path(path_str);
     checker_path.full();
@@ -588,7 +590,7 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path b
         if (int return_code = system(command.c_str()); return_code != 0) {
             __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {0}.", filename_ans).c_str());
         }
-        command = std::format("{0} < {1} > {2}", bf_path.path(), filename_in, filename_out);
+        command = std::format("{0} < {1} > {2}", wa_path.path(), filename_in, filename_out);
         if (int return_code = system(command.c_str()); return_code != 0) {
             __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {0}.", filename_out).c_str());
         }

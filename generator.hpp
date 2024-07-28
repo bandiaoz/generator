@@ -556,7 +556,7 @@ void check_output() {
     }
 }
 /**
- * @brief 对拍 num_case 组数据，使用 std_path 和 bf_path 两个可执行文件，checker 默认使用 lcmp
+ * @brief 对拍 num_case 组数据，使用 std_path 和 bf_path 两个可执行文件
  * @param checker_folder_path 如果使用常用 checker，需要提供所在的目录
  */
 void compare(int num_case, std::function<void()> gen_func, Path std_path, Path bf_path, Checker checker, std::string checker_folder_path = "./") {

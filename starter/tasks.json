@@ -23,14 +23,20 @@
       "problemMatcher": []
     },
     {
+      "label": "copy compare.cpp", // 复制一份 compare.cpp 到当前文件夹
+      "type": "shell",
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/compare.cpp ${fileDirname}/compare.cpp",
+      "problemMatcher": []
+    },
+    {
       "label": "compare", // 对拍
       "type": "shell",
-      "command": "cd ${fileDirname} && python starter.py  compare",
+      "command": "cd ${fileDirname} && python starter.py compare",
       "dependsOrder": "sequence",
       "dependsOn": [
         "copy starter.py"
       ],
       "problemMatcher": []
-    },
+    }
   ]
 }

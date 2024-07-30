@@ -15,7 +15,7 @@ int main() {
     };
 
     // compare(100, gen, "./std", "./wa", mycmp);
-    compare(100, gen, "./std", "./wa", wcmp, "/Users/chenjinglong/algorithm_competition/nowcoder/template/generator/checker/");
+    compare(100, gen, "./std", "./wa");
 
     return 0;
 }

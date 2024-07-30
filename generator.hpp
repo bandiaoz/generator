@@ -1,4 +1,6 @@
+#pragma once
 #include "testlib.h"
+#include "settings.hpp"
 
 #include <bits/stdc++.h>
 #include <sys/stat.h>
@@ -542,7 +544,7 @@ void __check_output(std::string prefix, Path check_path) {
     }
 }
 /**
- * @param 如果当前目录有 ./checker 可执行文件，判断输出是否正确
+ * @param 如果当前目录有 ./checker 可执行文件，判断输出是否正确；否则警告 checker 不存在
  */
 void check_output() {
     if (!__msg::Path("checker").__file_exists()) {
@@ -559,9 +561,11 @@ void check_output() {
  * @brief 对拍 num_case 组数据，使用 std_path 和 wa_path 两个可执行文件
  * @param std_path 相对可信的可执行文件
  * @param wa_path 待测的可执行文件
- * @param checker_folder_path 如果使用常用 checker，需要提供所在的目录
+ * @param checker 使用的 checker，默认为 wcmp
+ * @note 如果是 mycmp，需要在当前目录下有 checker 可执行文件
+ * @note 如果是 lcmp, ncmp, nyesno, rcmp4, rcmp6, rcmp9, wcmp，会在 settings::checker_folder_path 下寻找对应的 checker
  */
-void compare(int num_case, std::function<void()> gen_func, Path std_path, Path wa_path, Checker checker, std::string checker_folder_path = "./") {
+void compare(int num_case, std::function<void()> gen_func, Path std_path, Path wa_path, Checker checker = wcmp) {
     if (!std_path.__file_exists()) {
         __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
     }
@@ -570,7 +574,7 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
     }
     std_path.full();
     wa_path.full();
-    std::string path_str = checker_folder_path + checker_name[checker];
+    std::string path_str = settings::checker_folder_path + checker_name[checker];
     Path checker_path(path_str);
     checker_path.full();
     std::cerr << checker_path.path() << std::endl;

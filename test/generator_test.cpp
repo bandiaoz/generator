@@ -140,29 +140,62 @@ void rand_palindrome_test() {
 }
 
 namespace rand_vector_test {
-/**
- * @brief 测试 shuffle_index 函数
- */
+void rand_p_test() {
+    // 生成一个长度为 3 的排列
+    std::vector<int> a = rand_p(3);
+    std::sort(a.begin(), a.end());
+    assert(a[0] == 0 && a[1] == 1 && a[2] == 2);
+
+    std::vector<int> b = rand_p(3, 1);
+    std::sort(b.begin(), b.end());
+    assert(b[0] == 1 && b[1] == 0 && b[2] == 2);
+}
+
+void rand_sum_test() {
+    std::vector<int> a = rand_sum(3, 5);
+    assert(a.size() == 3 && std::accumulate(a.begin(), a.end(), 0) == 5);
+
+    std::vector<int> b = rand_sum(3, 10, 2);
+    assert(b.size() == 3 && std::accumulate(b.begin(), b.end(), 0) == 10
+                        && std::ranges::min(b) >= 2);
+    
+    std::vector<int> c = rand_sum(3, 10, 2, 5);
+    assert(c.size() == 3 && std::accumulate(c.begin(), c.end(), 0) == 10
+                        && std::ranges::min(c) >= 2 && std::ranges::max(c) <= 5);
+}
+
 void rand_vector_test() {
-    std::vector a{1, 3, 3, 4, 8};
-    auto b = shuffle_index(a);
-    for (auto i : b) {
-        std::cerr << i << " ";
-    }
+    std::vector a = rand_vector<int>(5, []() {
+        return rand_int(1, 100);
+    });
+    assert(a.size() == 5 && std::all_of(a.begin(), a.end(), [](int x) {
+        return x >= 1 && x <= 100;
+    }));
+
+    std::vector b = rand_vector<int>(5, 10, []() {
+        return rand_int(1, 100);
+    });
+    assert(b.size() >= 5 && b.size() <= 10 && std::all_of(b.begin(), b.end(), [](int x) {
+        return x >= 1 && x <= 100;
+    }));
+}
+
+void shuffle_index_test() {
+    std::vector<int> a = {1, 2, 3};
+    std::vector<int> b = shuffle_index(a, 1);
+    std::sort(b.begin(), b.end());
+    assert((b == std::vector{1, 2, 2, 3, 3, 3}));
+}
+}
+
+namespace rand_graph_test {
+    
 }
 
 int main() {
     init_gen();
 
-    // __change_to_double_test();
-
-    // rand_prob_test();
-
-    // rand_char_test();
-
-    // rand_string();
-
-    rand_vector();
+    
 
     return 0;
 }

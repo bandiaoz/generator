@@ -10,7 +10,7 @@ int main() {
     auto gen = [&]() {
     };
 
-    compare(100, gen, "./ac", "./wa", wcmp, "/Users/chenjinglong/algorithm_competition/nowcoder/template/generator/checker/");
+    compare(100, gen, "./ac", "./wa");
     system("rm hack.in");
 
     return 0;

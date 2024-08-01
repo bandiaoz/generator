@@ -3,7 +3,7 @@ import sys
 
 def compile_cpp(
     file_name,
-    path="/Users/chenjinglong/algorithm_competition/nowcoder/template/generator",
+    path="/Users/chenjinglong/algorithm_competition/nowcoder/generator",
 ):
     """
     编译 cpp 文件，获得同名可执行文件；例如 std.cpp -> std, checker.cc -> checker

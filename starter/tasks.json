@@ -4,7 +4,7 @@
     {
       "label": "copy starter.py",
       "type": "shell",
-      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/starter.py ${fileDirname}/starter.py"
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/generator/starter/starter.py ${fileDirname}/starter.py"
     },
     {
       "label": "Generate data", // 自动生成数据
@@ -19,13 +19,13 @@
     {
       "label": "copy gen.cpp", // 复制一份 gen.cpp 到当前文件夹
       "type": "shell",
-      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/gen.cpp ${fileDirname}/gen.cpp",
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/generator/starter/gen.cpp ${fileDirname}/gen.cpp",
       "problemMatcher": []
     },
     {
       "label": "copy compare.cpp", // 复制一份 compare.cpp 到当前文件夹
       "type": "shell",
-      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/template/generator/starter/compare.cpp ${fileDirname}/compare.cpp",
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/generator/starter/compare.cpp ${fileDirname}/compare.cpp",
       "problemMatcher": []
     },
     {

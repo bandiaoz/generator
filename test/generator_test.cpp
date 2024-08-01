@@ -87,39 +87,63 @@ void rand_prob_test() {
 }
 }
 
+namespace rand_string_test {
 void rand_char_test() {
+    // 随机生成一个字符，默认是小写字母
     char a = rand_char();
-    char b = rand_char(Number);
-    char c = rand_char("[a%cf]", 'd');
-
     assert(isalpha(a));
+    // 随机生成一个数字字符
+    char b = rand_char(Number);
     assert(isdigit(b));
-    std::cerr << rand_char("[a%cf]", 'd') << " " <<  
-        rand_char("[a%cf]", 'd') << " " << 
-        rand_char("[a%cf]", 'd') << " " <<
-        rand_char("[a%cf]", 'd') << " " <<
-        rand_char("[a%cf]", 'd') << " " <<
-        rand_char("[a%cf]", 'd') << " " <<
-        std::endl;
-
-    std::cerr << rand_char(std::string("abcs")) << " " << 
-        rand_char(std::string("abcs")) << " " << 
-        rand_char(std::string("abcs")) << " " << 
-        rand_char(std::string("abcs")) << " " <<
-        rand_char(std::string("abcs")) << " " <<
-        rand_char(std::string("abcs")) << " " <<
-        std::endl;
+    
+    // 错误的极简正则 format
+    char c = rand_char(std::string("abcd"));
+    assert(c == 'a');
+    // 正确的极简正则 format
+    char d = rand_char("[a%cf]", 'd');
+    assert(d == 'a' || d == 'd' || d == 'f');
 }
 
-void rand_string() {
-    std::cout << rand_string("[abcd]{5}") << std::endl;
-    std::cout << rand_string(5, "[abcd]") << std::endl;
+void rand_string_test() {
+    std::string a = rand_string(5);
+    assert(a.size() == 5 && std::all_of(a.begin(), a.end(), islower));
 
-    std::cout << rand_string("[abcd]{5, 10}") << std::endl;
-    std::cout << rand_string(5, 10, "[abcd]") << std::endl;
+    std::string b = rand_string(5, ZeroOne);
+    assert(b.size() == 5 && std::all_of(b.begin(), b.end(), [](char c) {
+        return c == '0' || c == '1';
+    }));
+
+    std::string c = rand_string(4, 5, Number);
+    assert(c.size() >= 4 && c.size() <= 5 && std::all_of(c.begin(), c.end(), isdigit));
+
+    std::string d = rand_string(5, "[ab]");
+    assert(d.size() == 5 && std::all_of(d.begin(), d.end(), [](char c) {
+        return c == 'a' || c == 'b';
+    }));
+
+    std::string e = rand_string(3, 5, "[a-z]");
+    assert(e.size() >= 3 && e.size() <= 5 && std::all_of(e.begin(), e.end(), islower));
+
+    std::string f = rand_string("[a-z]{5}");
+    assert(f.size() == 5 && std::all_of(f.begin(), f.end(), islower));
+
+    std::string g = rand_string("[a-z]{5, 10}");
+    assert(g.size() >= 5 && g.size() <= 10 && std::all_of(g.begin(), g.end(), islower));
 }
 
-void rand_vector() {
+void rand_palindrome_test() {
+    // 生成长度为 10 的小写字母串，至少包含长度为 5 的回文子串
+    std::string a = rand_palindrome(10, 5);
+
+    std::string b = rand_palindrome(10, 5, "[a-z]");
+}
+}
+
+namespace rand_vector_test {
+/**
+ * @brief 测试 shuffle_index 函数
+ */
+void rand_vector_test() {
     std::vector a{1, 3, 3, 4, 8};
     auto b = shuffle_index(a);
     for (auto i : b) {

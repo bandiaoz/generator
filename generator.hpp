@@ -574,7 +574,12 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
     }
     std_path.full();
     wa_path.full();
-    std::string path_str = settings::checker_folder_path + checker_name[checker];
+    std::string path_str;
+    if (checker == mycmp) {
+        path_str = "./checker";
+    } else {
+        path_str = settings::checker_folder_path + checker_name[checker];
+    }
     Path checker_path(path_str);
     checker_path.full();
     std::cerr << checker_path.path() << std::endl;

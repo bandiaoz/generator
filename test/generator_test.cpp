@@ -4,6 +4,18 @@
 using namespace generator::all;
 
 namespace rand_numeric_test {
+/**
+ * @brief 随机获得一个布尔值
+ */
+void rand_bool_test() {
+    bool a = rand_bool();
+    assert(a == true || a == false);
+}
+
+/**
+ * @brief 随机获得一个整数
+ * @param 参数只要可以转换为整型即可，或者是一个格式字符串
+ */
 void rand_int_test() {
     int a = rand_int(10);
     assert(a >= 0 && a < 10);
@@ -24,6 +36,9 @@ void rand_int_test() {
     assert(e >= 1 && e < 10);
 }
 
+/**
+ * @brief 随机获得一个奇数
+ */
 void rand_odd_test() {
     int a = rand_odd(1, 5);
     assert(a % 2 == 1 && a >= 1 && a <= 5);
@@ -32,6 +47,9 @@ void rand_odd_test() {
     assert(b % 2 == 1 && b >= 1 && b <= 5);
 }
 
+/**
+ * @brief 随机获得一个偶数
+ */
 void rand_even_test() {
     int a = rand_even(1, 5);
     assert(a % 2 == 0 && a >= 1 && a <= 5);
@@ -58,7 +76,11 @@ void __change_to_double_test() {
     assert(__is_equal(result3, 10.0));
 }
 
+/**
+ * @brief 随机获得一个实数
+ */
 void rand_real_test() {
+    // 不带参数默认是 [0, 1)
     double a = rand_real();
     assert(a >= 0 && a < 1);
 
@@ -74,6 +96,9 @@ void rand_real_test() {
     assert(d >= 1e-2 && d < 1e2);
 }
 
+/**
+ * @brief 根据给定的概率随机生成
+ */
 void rand_prob_test() {
     std::map<char, int> probabilities = {
         {'A', 1},
@@ -88,6 +113,9 @@ void rand_prob_test() {
 }
 
 namespace rand_string_test {
+/**
+ * @brief 随机生成一个字符，可选的格式有小写字母、大写字母、字母、数字、字母数字、01
+ */
 void rand_char_test() {
     // 随机生成一个字符，默认是小写字母
     char a = rand_char();
@@ -104,7 +132,11 @@ void rand_char_test() {
     assert(d == 'a' || d == 'd' || d == 'f');
 }
 
+/**
+ * @brief 随机生成一个字符串，可选的格式有小写字母、大写字母、字母、数字、字母数字、01
+ */
 void rand_string_test() {
+    // 默认生成小写字母串
     std::string a = rand_string(5);
     assert(a.size() == 5 && std::all_of(a.begin(), a.end(), islower));
 
@@ -121,16 +153,22 @@ void rand_string_test() {
         return c == 'a' || c == 'b';
     }));
 
+    // 生成长度为 3 到 5 的小写字母串
     std::string e = rand_string(3, 5, "[a-z]");
     assert(e.size() >= 3 && e.size() <= 5 && std::all_of(e.begin(), e.end(), islower));
 
+    // 生成长度为 5 的小写字母串
     std::string f = rand_string("[a-z]{5}");
     assert(f.size() == 5 && std::all_of(f.begin(), f.end(), islower));
 
+    // 生成长度为 5 到 10 的小写字母串
     std::string g = rand_string("[a-z]{5, 10}");
     assert(g.size() >= 5 && g.size() <= 10 && std::all_of(g.begin(), g.end(), islower));
 }
 
+/**
+ * @brief 随机生成一个字符串，包含回文子串
+ */
 void rand_palindrome_test() {
     // 生成长度为 10 的小写字母串，至少包含长度为 5 的回文子串
     std::string a = rand_palindrome(10, 5);
@@ -138,6 +176,9 @@ void rand_palindrome_test() {
     std::string b = rand_palindrome(10, 5, "[a-z]");
 }
 
+/**
+ * @brief 随机生成一个合法括号串
+ */
 void rand_rand_bracket_seq_test() {
     // 生成长度为 10 的合法括号串
     std::string a = rand_bracket_seq(10, "[](){}");
@@ -147,17 +188,24 @@ void rand_rand_bracket_seq_test() {
 }
 
 namespace rand_vector_test {
+/**
+ * @brief 随机生成一个排列
+ */
 void rand_p_test() {
-    // 生成一个长度为 3 的排列
+    // 生成一个长度为 3 的排列，默认最小值为 0
     std::vector<int> a = rand_p(3);
     std::sort(a.begin(), a.end());
     assert(a[0] == 0 && a[1] == 1 && a[2] == 2);
 
+    // 生成一个长度为 3 的排列，最小值为 1
     std::vector<int> b = rand_p(3, 1);
     std::sort(b.begin(), b.end());
     assert(b[0] == 1 && b[1] == 0 && b[2] == 2);
 }
 
+/**
+ * @brief 随机生成一个数组，数组的元素和为 sum
+ */
 void rand_sum_test() {
     std::vector<int> a = rand_sum(3, 5);
     assert(a.size() == 3 && std::accumulate(a.begin(), a.end(), 0) == 5);
@@ -171,6 +219,9 @@ void rand_sum_test() {
                         && std::ranges::min(c) >= 2 && std::ranges::max(c) <= 5);
 }
 
+/**
+ * @brief 随机生成一个数组，数组元素由 func 生成
+ */
 void rand_vector_test() {
     std::vector a = rand_vector<int>(5, []() {
         return rand_int(1, 100);

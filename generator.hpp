@@ -615,13 +615,86 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
 namespace rand_numeric {
 
 /**
+ * @brief 随机生成一个 bool 值，true 或 false
+ */
+bool rand_bool() {
+    return rnd.next(2) == 1;
+}
+
+const long long __LONG_LONG_MIN = std::numeric_limits<long long>::min();
+const unsigned long long __UNSIGNED_LONG_LONG_MAX = std::numeric_limits<unsigned long long>::max();
+const unsigned long long __UNSIGNED_LONG_LONG_MIN = std::numeric_limits<unsigned long long>::min();
+const unsigned long long __CHECK_LONG_LONG_MAX = (unsigned long long)std::numeric_limits<long long>::max();
+const unsigned long long __CHECK_ABS_LONG_LONG_MIN = __CHECK_LONG_LONG_MAX + 1ULL;
+const unsigned long long __CHECK_UNSIGNED_LONG_MAX = (unsigned long long)std::numeric_limits<unsigned long>::max();
+
+template<typename T>
+T __rand_int_impl(T x) {
+    return rnd.next(x);
+}
+
+template<>
+unsigned int __rand_int_impl<unsigned int>(unsigned int n) {
+    return static_cast<unsigned int>(rnd.next(static_cast<long long>(n)));
+}
+
+template<>
+unsigned long long __rand_int_impl<unsigned long long>(unsigned long long n) {
+    if (n == 0) {
+        __msg::__fail_msg(__msg::_err, "n must greater than 0.");
+    }
+    long long ask = 1LL << 32;
+    unsigned long long limit = __UNSIGNED_LONG_LONG_MAX / n * n;
+    unsigned long long z;
+    do {
+        unsigned long long x = static_cast<unsigned long long>(rnd.next(ask));
+        unsigned long long y = static_cast<unsigned long long>(rnd.next(ask));
+        z = (x << 32) ^ y;
+    } while (z >= limit);
+    return z % n;
+}
+
+template<typename T>
+T __rand_int_impl(T from, T to) {
+    return rnd.next(from, to);
+}
+
+template<>
+unsigned long long __rand_int_impl<unsigned long long>(unsigned long long from, unsigned long long to) {
+    if (from > to) {
+        __msg::__fail_msg(__msg::_err, "range [%llu, %llu] is not valid.", from, to);
+    }
+    if (from == __UNSIGNED_LONG_LONG_MIN && to == __UNSIGNED_LONG_LONG_MAX) {
+        unsigned long long result = __rand_int_impl<unsigned long long>(from, to / 2);
+        return rand_bool() ? result * 2ULL + 1 : result * 2ULL;
+    }
+    return __rand_int_impl<unsigned long long>(to - from + 1ULL) + from;
+}
+
+template<>
+long long __rand_int_impl<long long>(long long from, long long to) {
+    if (from > to) {
+        __msg::__fail_msg(__msg::_err, "range [%lld, %lld] is not valid.", from, to);
+    }
+    if ((from < 0 && to < 0) || (from > 0 && to > 0)) {
+        return rnd.next(from, to);
+    } else {
+        unsigned long long froml = (unsigned long long)from - __LONG_LONG_MIN;
+        unsigned long long tol = (unsigned long long)to - __LONG_LONG_MIN;
+        unsigned long long result = __rand_int_impl<unsigned long long>(froml, tol);
+        if (result >= __CHECK_ABS_LONG_LONG_MIN) return (long long)(result - __CHECK_ABS_LONG_LONG_MIN);
+        else return (long long)result - __CHECK_ABS_LONG_LONG_MIN;
+    }
+}
+
+/**
  * @brief 生成 [0, n) 范围内的随机整数，等价于 rnd.next(n)
  * @tparam T 整数类型
  */
 template <typename T = int>
 typename std::enable_if<std::is_integral<T>::value, T>::type 
 rand_int(T n) {
-    return rnd.next(n);
+    return __rand_int_impl<T>(n);
 }
 
 /**
@@ -631,7 +704,7 @@ rand_int(T n) {
 template <typename T = int>
 typename std::enable_if<std::is_integral<T>::value, T>::type
 rand_int(T from, T to) {
-    return rnd.next(from, to);
+    return __rand_int_impl<T>(from, to);
 }
 
 /**
@@ -643,7 +716,7 @@ typename std::enable_if<
     std::is_convertible<T, long long>::value && 
     std::is_convertible<U, long long>::value, long long>::type
 rand_int(T from, U to) {
-    return rnd.next((long long)from, (long long)to);
+    return __rand_int_impl<long long>((long long)from, (long long)to);
 }
 
 /**
@@ -680,9 +753,25 @@ std::pair<long long, long long> __format_to_int_range(std::string s) {
  */
 long long rand_int(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
-    std::pair<long long, long long> range = __format_to_int_range(_format);
-    long long x = rnd.next(range.first, range.second);
-    return x;
+    auto [from, to] = __format_to_int_range(_format);
+    return __rand_int_impl<long long>(from, to);
+}
+
+template <typename T>
+T __to_odd_need_limit(T n, bool lower) {
+    if (n % 2 == 0) lower ? n++ : n--;
+    return (n - 1) / 2;
+}
+
+template <typename T>
+T __rand_odd_impl(T from, T to) {
+    if (to < from || (to == from && to % 2 == 0)) {
+        __msg::__fail_msg(__msg::_err, std::format("There is no odd number between [{0}, {1}].", from, to).c_str());
+    }
+    T l = __to_odd_need_limit(from, true);
+    T r = __to_odd_need_limit(to, false);
+    T v = rand_int(l, r);
+    return v * 2 + 1;
 }
 
 /**
@@ -691,14 +780,7 @@ long long rand_int(const char* format, ...) {
 template <typename T = long long, typename U = long long>
 typename std::enable_if<std::is_integral<T>::value && std::is_integral<U>::value, long long>::type
 rand_odd(T from, U to) {
-    long long froml = (long long)from;
-    long long tol = (long long)to;
-    long long l = (froml + (froml % 2 == 0) - 1) / 2;
-    long long r = (tol - (tol % 2 == 0) - 1) / 2;
-    if (l > r) {
-        __msg::__fail_msg(__msg::_err, std::format("There is no odd number between [{0}, {1}].", froml, tol).c_str());
-    }
-    return 2 * rnd.next(l, r) + 1;
+    return __rand_odd_impl<long long>(from, to);
 }
 
 /**
@@ -706,9 +788,25 @@ rand_odd(T from, U to) {
  */
 long long rand_odd(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
-    std::pair<long long, long long> range = __format_to_int_range(_format);
-    long long x = rand_odd(range.first, range.second);
-    return x;
+    auto [from, to] = __format_to_int_range(_format);
+    return __rand_odd_impl<long long>(from, to);
+}
+
+template <typename T>
+T __to_even_need_limit(T n, bool lower) {
+    if (n % 2 != 0) lower ? n++ : n--;
+    return n / 2;
+}
+
+template <typename T>
+T __rand_even_impl(T from, T to) {
+    if (to < from || (to == from && to % 2 != 0)) {
+        __msg::__fail_msg(__msg::_err, std::format("There is no even number between [{0}, {1}].", from, to).c_str());
+    }
+    T l = __to_even_need_limit(from, true);
+    T r = __to_even_need_limit(to, false);
+    T v = rand_int(l, r);
+    return v * 2;
 }
 
 /**
@@ -717,14 +815,7 @@ long long rand_odd(const char* format, ...) {
 template <typename T = long long, typename U = long long>
 typename std::enable_if<std::is_integral<T>::value && std::is_integral<U>::value, long long>::type
 rand_even(T from, U to) {
-    long long froml = (long long)from;
-    long long tol = (long long)to;
-    long long l = (froml + std::abs(froml % 2)) / 2;
-    long long r = (tol - std::abs(tol % 2)) / 2;
-    if (l > r) {
-        __msg::__fail_msg(__msg::_err, std::format("There is no even number between [{0}, {1}].", froml, tol).c_str());
-    }
-    return 2 * rnd.next(l, r);
+    return __rand_even_impl<long long>(from, to);
 }
 
 /**
@@ -732,8 +823,8 @@ rand_even(T from, U to) {
  */
 long long rand_even(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
-    std::pair<long long, long long> range = __format_to_int_range(_format);
-    return rand_even(range.first, range.second);
+    auto [from, to] = __format_to_int_range(_format);
+    return __rand_even_impl<long long>(from, to);
 }
 
 /**
@@ -988,6 +1079,68 @@ std::string rand_palindrome(int n, int p, const char* format, ...) {
 std::string rand_palindrome(int n, int p, std::string format) {
     return __rand_palindrome_impl(n, p, format);
 }
+
+using rand_numeric::rand_bool;
+using rand_numeric::rand_even;
+
+void __rand_bracket_open(std::string& res, std::string& open, std::stack<int>& st, int& limit) {
+    limit--;
+    int pos = rnd.next(open.size());
+    st.push(pos);
+    res += open[pos];
+}
+
+void __rand_bracket_close(std::string& res, std::string& close, std::stack<int>& st) {
+    int pos = st.top();
+    st.pop();
+    res += close[pos];
+}
+
+std::string rand_bracket_seq(int len, std::string brackets = "()") {
+    if (len < 0 || len % 2) {
+        __msg::__fail_msg(__msg::_err, "Length must be positive even number, but found %d.", len);
+    }
+    std::stack<int> st;
+    std::string open = "";
+    std::string close = "";
+    if (brackets.size() == 0 || brackets.size() % 2) {
+        __msg::__fail_msg(__msg::_err, "Bracket must appear in pairs and the length must be greater than 0.");
+    }
+    for (int i = 0; i < brackets.size(); i++) {
+        if (i % 2 == 0) open += brackets[i];
+        else close += brackets[i];
+    }
+    std::string res = "";
+    int limit = len / 2;
+    while (limit) {
+        if (st.empty() || rand_bool()) __rand_bracket_open(res, open, st, limit);
+        else __rand_bracket_close(res, close, st);
+    }
+    while (!st.empty()) __rand_bracket_close(res, close, st);
+    return res;
+}
+
+/**
+ * @brief 生成一个长度为 len 的合法括号序列
+ */
+std::string rand_bracket_seq(int len, const char* format = "()", ...) {
+    FMT_TO_RESULT(format, format, _format);
+    return rand_bracket_seq(len, _format);
+}
+
+/**
+ * @brief 生成一个长度为 [from, to] 的合法括号序列
+ */
+std::string rand_bracket_seq(int from, int to, std::string brackets = "()") {
+    int len = rand_even(from, to);
+    return rand_bracket_seq(len, brackets);
+}
+
+std::string rand_bracket_seq(int from, int to, const char* format = "()", ...) {
+    FMT_TO_RESULT(format, format, _format);
+    return rand_bracket_seq(from, to, _format);
+}
+
 }
 
 namespace rand_vector {

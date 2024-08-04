@@ -137,6 +137,13 @@ void rand_palindrome_test() {
 
     std::string b = rand_palindrome(10, 5, "[a-z]");
 }
+
+void rand_rand_bracket_seq_test() {
+    // 生成长度为 10 的合法括号串
+    std::string a = rand_bracket_seq(10, "[](){}");
+    // 生成长度为 5 到 10 的合法括号串
+    std::string b = rand_bracket_seq(5, 10, "[](){}");
+}
 }
 
 namespace rand_vector_test {
@@ -189,7 +196,37 @@ void shuffle_index_test() {
 }
 
 namespace rand_graph_test {
-    
+/**
+ * @brief 随机图测试
+ */
+void graph_constructor_test() {
+    int n = 10;
+    int m = 10;
+    // 以带点权带边权的图为例，生成一个 n 个点 m 条边的图
+    both_weight::Graph<int, int> g(n, m);
+    g.set_begin_node(1); // 设置点的起始编号，默认为 1
+    g.set_direction(false); // 设置是否有向，默认为 false
+    g.set_multiply_edge(false); // 设置是否允许重边，默认为 false
+    g.set_self_loop(false); // 设置是否允许自环，默认为 false
+    g.set_connect(false); // 设置是否连通，默认为 false
+    g.set_swap_node(false); // 设置是否随机交换 u, v，默认为无向图交换，有向图不交换，注意不要在有向图下设置为交换
+    g.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
+        return rand_int(1, 100);
+    });
+    g.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
+        return rand_int(1, 100);
+    });
+    g.set_output_node_count(true); // 设置是否输出点的数量，默认为 true
+    g.set_output_edge_count(true); // 设置是否输出边的数量，默认为 true
+
+    g.gen(); // 生成图
+    println(g); // 输出图
+
+    // 类似地，生成不带权、带点权、带边权的图
+    unweight::Graph g_unweight(n, m);
+    node_weight::Graph<int> g_node_weight(n, m);
+    edge_weight::Graph<int> g_edge_weight(n, m);
+}
 }
 
 int main() {

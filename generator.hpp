@@ -1136,9 +1136,26 @@ std::string rand_bracket_seq(int from, int to, std::string brackets = "()") {
     return rand_bracket_seq(len, brackets);
 }
 
+/**
+ * @brief 生成一个长度为 [from, to] 的合法括号序列
+ */
 std::string rand_bracket_seq(int from, int to, const char* format = "()", ...) {
     FMT_TO_RESULT(format, format, _format);
     return rand_bracket_seq(from, to, _format);
+}
+
+/**
+ * @brief 生成一个长度为 len 的合法括号序列，默认括号为 "()"
+ */
+std::string rand_bracket_seq(int len) {
+    return rand_bracket_seq(len, "()");
+}
+
+/**
+ * @brief 生成一个长度为 [from, to] 的合法括号序列，默认括号为 "()"
+ */
+std::string rand_bracket_seq(int from, int to) {
+    return rand_bracket_seq(from, to, "()");
 }
 
 }

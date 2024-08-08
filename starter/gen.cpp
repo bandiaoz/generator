@@ -7,16 +7,12 @@ int main() {
     std::cin.tie(nullptr);
     init_gen();
 
-    auto print = [&]() {
-    };
-
-    auto gen = [&](int max, ...) {
-    };
-
-    for (int i = 1; i <= 20; i++) {
-        gen(i <= 4 ? 10 : 1e5);
-        make_input(i, print);
-        auto out = make_output_exe(i, "./std");
+    for (int index = 1; index <= 20; index++) {
+        int n = index <= 4 ? 10 : 1e5;
+        int max = index <= 4 ? 10 : 1e9;
+        make_input(index, [&]() {
+        });
+        auto out = make_output_exe(index, "./std");
     }
 
     // fill_outputs_exe("./std");

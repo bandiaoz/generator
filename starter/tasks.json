@@ -29,6 +29,12 @@
       "problemMatcher": []
     },
     {
+      "label": "copy checker.cc", // 复制一份 checker.cc 到当前文件夹
+      "type": "shell",
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/generator/starter/checker.cc ${fileDirname}/checker.cc",
+      "problemMatcher": []
+    },
+    {
       "label": "compare", // 对拍
       "type": "shell",
       "command": "cd ${fileDirname} && python starter.py compare",

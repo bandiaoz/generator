@@ -1096,7 +1096,7 @@ void __rand_bracket_close(std::string& res, std::string& close, std::stack<int>&
     res += close[pos];
 }
 
-std::string rand_bracket_seq(int len, std::string brackets = "()") {
+std::string rand_bracket_seq(int len, std::string brackets) {
     if (len < 0 || len % 2) {
         __msg::__fail_msg(__msg::_err, "Length must be positive even number, but found %d.", len);
     }
@@ -1123,7 +1123,7 @@ std::string rand_bracket_seq(int len, std::string brackets = "()") {
 /**
  * @brief 生成一个长度为 len 的合法括号序列
  */
-std::string rand_bracket_seq(int len, const char* format = "()", ...) {
+std::string rand_bracket_seq(int len, const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     return rand_bracket_seq(len, _format);
 }
@@ -1131,7 +1131,7 @@ std::string rand_bracket_seq(int len, const char* format = "()", ...) {
 /**
  * @brief 生成一个长度为 [from, to] 的合法括号序列
  */
-std::string rand_bracket_seq(int from, int to, std::string brackets = "()") {
+std::string rand_bracket_seq(int from, int to, std::string brackets) {
     int len = rand_even(from, to);
     return rand_bracket_seq(len, brackets);
 }
@@ -1139,7 +1139,7 @@ std::string rand_bracket_seq(int from, int to, std::string brackets = "()") {
 /**
  * @brief 生成一个长度为 [from, to] 的合法括号序列
  */
-std::string rand_bracket_seq(int from, int to, const char* format = "()", ...) {
+std::string rand_bracket_seq(int from, int to, const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     return rand_bracket_seq(from, to, _format);
 }

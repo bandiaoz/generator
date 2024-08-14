@@ -7,26 +7,18 @@ int main() {
     std::cin.tie(nullptr);
     init_gen();
 
-    int a, b;
-    auto print = [&]() {
-        assert(1 <= a && a <= 1e9);
-        assert(1 <= b && b <= 1e9);
-        println(a, b);
-    };
-
-    auto gen = [&](int max) {
-        a = rand_int(1, max);
-        b = rand_int(1, max);
-    };
-
-    for (int i = 1; i <= 20; i++) {
-        gen(i <= 4 ? 10 : 1e9);
-        make_input(i, print);
-        auto out = make_output_exe(i, "./std");
+    for (int index = 1; index <= 20; index++) {
+        int max = index <= 4 ? 100 : 1e9;
+        make_input(index, [&]() {
+            int a = rand_int(1, 1e9);
+            int b = rand_int(1, 1e9);
+            println(a, b);
+        });
+        auto out = make_output_exe(index, "./std");
         int ans;
         out >> ans;
         if (ans % 2 == 1) {
-            i--;
+            index--;
         }
     }
 

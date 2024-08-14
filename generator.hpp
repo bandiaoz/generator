@@ -629,6 +629,65 @@ const unsigned long long __CHECK_ABS_LONG_LONG_MIN = __CHECK_LONG_LONG_MAX + 1UL
 const unsigned long long __CHECK_UNSIGNED_LONG_MAX = (unsigned long long)std::numeric_limits<unsigned long>::max();
 
 template<typename T>
+T __string_to_value(const std::string& s) {
+    __msg::__fail_msg(__msg::_err, "Unsupported type.");
+}
+
+template<>
+float __string_to_value(const std::string& s) {
+    return std::stof(s);
+}
+
+template<>
+double __string_to_value(const std::string& s) {
+    return std::stod(s);
+}
+
+bool __is_real_format(const std::string& s) {
+    return s.find_first_of("eE.");
+}
+
+template<>
+int __string_to_value(const std::string& s) {
+    if (__is_real_format(s)) 
+        return (int)__string_to_value<double>(s);
+    return std::stoi(s);
+}
+
+template<>
+long __string_to_value(const std::string& s) {
+    if (__is_real_format(s)) 
+        return (long)__string_to_value<double>(s);
+    return std::stol(s);
+}
+
+template<>
+unsigned long __string_to_value(const std::string& s) {
+    if (__is_real_format(s)) 
+        return (unsigned long)__string_to_value<double>(s);
+    return std::stoul(s);
+}
+
+template<>
+long long __string_to_value(const std::string& s) {
+    if (__is_real_format(s)) 
+        return (long long)__string_to_value<double>(s);
+    return std::stoll(s);
+}
+
+template<>
+unsigned long long __string_to_value(const std::string& s) {
+    if (__is_real_format(s)) 
+        return (unsigned long long)__string_to_value<double>(s);
+    return std::stoll(s);
+}
+
+template<>
+unsigned int __string_to_value(const std::string& s) {
+    return (unsigned int)__string_to_value<long long>(s);
+}
+
+template<typename T>
 T __rand_int_impl(T x) {
     return rnd.next(x);
 }
@@ -719,29 +778,26 @@ rand_int(T from, U to) {
     return __rand_int_impl<long long>((long long)from, (long long)to);
 }
 
+std::string __sub_value_string(std::string&s, size_t from, size_t to) {
+    return s.substr(from + 1, to - from - 1);
+}
+
 /**
- * @brief 将 "[1,10]" 格式的字符串转换为 std::pair(1, 10)
+ * @brief 将形如 "[from, to)" 的字符串格式转换为 std::pair(from, to)，表示 [from, to] 的范围
  */
-std::pair<long long, long long> __format_to_int_range(std::string s) {
+template <typename T = long long>
+typename std::enable_if<std::is_integral<T>::value, std::pair<T, T>>::type
+__format_to_int_range(std::string& s) {
     size_t open = s.find_first_of("[(");
     size_t close = s.find_first_of(")]");
     size_t comma = s.find(',');
-    auto string_to_int = [&](size_t from, size_t to) -> long long {
-        std::string str = s.substr(from + 1, to - from - 1);
-        return std::stoll(str);
-    };
     if (open == std::string::npos || close == std::string::npos || comma == std::string::npos) {
         __msg::__fail_msg(__msg::_err, std::format("{} is an invalid format. Example: [1, 10)", s).c_str());
     }
-    assert(open != std::string::npos && close != std::string::npos && comma != std::string::npos);
-    long long left = string_to_int(open, comma);
-    long long right = string_to_int(comma, close);
-    if (s[open] == '(') {
-        left++;
-    }
-    if (s[close] == ')') {
-        right--;
-    }
+    T left = __string_to_value<T>(__sub_value_string(s, open, comma));
+    T right = __string_to_value<T>(__sub_value_string(s, comma, close));
+    if (s[open] == '(') left++;
+    if (s[close] == ')') right--;
     return std::pair(left, right);
 }
 
@@ -751,10 +807,12 @@ std::pair<long long, long long> __format_to_int_range(std::string s) {
  * @note 注意，如果 from 和 to 是小数类型，会先强制转换再判断括号的开闭；
  * @note 例如 rand_int("[1.0, 10.2)") 会生成 [1, 10) 范围内的随机整数，不会生成 10。
  */
-long long rand_int(const char* format, ...) {
+template <typename T = long long>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+rand_int(const char* format,...) {
     FMT_TO_RESULT(format, format, _format);
-    auto [from, to] = __format_to_int_range(_format);
-    return __rand_int_impl<long long>(from, to);
+    std::pair<T, T> range = __format_to_int_range<T>(_format);
+    return __rand_int_impl<T>(range.first,range.second);
 }
 
 template <typename T>
@@ -860,7 +918,8 @@ double rand_real() {
  * @tparam T 浮点类型或者可以转换为 double 类型
  */
 template <typename T = double>
-double rand_real(T n) {
+typename std::enable_if<is_double_valid<T>(), double>::type
+rand_real(T n) {
     double _n = __change_to_double(n);
     return rnd.next(_n);
 }
@@ -876,40 +935,97 @@ rand_real(T from, U to) {
     return rnd.next(_from, _to);
 }
 
+int __number_accuracy(const std::string& s) {
+    int digit = 1;
+    bool is_decimal_part = false;
+    bool is_scientific_part = false;
+    std::string scientific_part = "";
+    for (auto c : s) {
+        if (is_decimal_part == true) {
+            if(c >= '0' && c <= '9') digit ++;
+            else is_decimal_part = false;
+        }
+        if (is_scientific_part == true) scientific_part += c;
+        if (c == '.') is_decimal_part = true;
+        if (c == 'e' || c == 'E') is_scientific_part = true;
+    }
+    if (scientific_part != "") {
+        int scientific_length = std::stoi(scientific_part);
+        digit -= scientific_length;
+    }
+    return digit;
+}
+
 /**
  * @brief 将 "[1.0, 10.0]" 格式的字符串转换为 std::pair(1.0, 10.0)
  */
-std::pair<double, double> __format_to_double_range(std::string s) {
+template <typename T = double>
+typename std::enable_if<std::is_floating_point<T>::value, std::pair<T, T>>::type
+__format_to_double_range(std::string s) {
+    int accuracy = 1;
     size_t open = s.find_first_of("[(");
     size_t close = s.find_first_of(")]");
     size_t comma = s.find(',');
-    auto string_to_double = [&](size_t from, size_t to) -> double {
-        std::string str = s.substr(from + 1, to - from - 1);
-        return std::stod(str);
-    };
-    if (open == std::string::npos || close == std::string::npos || comma == std::string::npos) {
-        __msg::__fail_msg(__msg::_err, std::format("{} is an invalid format. Example: [1.0, 10.0)", s).c_str());
+    if(open == std::string::npos || close == std::string::npos || comma == std::string::npos) {
+        __msg::__fail_msg(__msg::_err,"%s is an invalid range.", s.c_str());
     }
-    double left = string_to_double(open, comma);
-    double right = string_to_double(comma, close);
-    double eps = 1e-8;
-    if (s[open] == '(') {
-        left += eps;
-    }
-    if (s[close] == ']') {
-        right += eps;
-    }
-    return std::pair(left, right);
+    std::string left_str = __sub_value_string(s, open, comma);
+    std::string right_str = __sub_value_string(s, comma, close);
+    T left = __string_to_value<T>(left_str);
+    T right = __string_to_value<T>(right_str);
+    accuracy = std::max(accuracy, std::max(__number_accuracy(left_str), __number_accuracy(right_str)));
+    double eps = std::pow(10.0, -accuracy);
+    if(s[open] == '(') left += eps;
+    if(s[close] == ']') right += eps;
+    return std::make_pair(left,right);
 }
 
 /**
  * @brief 生成给定范围内的随机实数，格式为 "[from, to]", "[from, to)"
  * @param format 格式字符串，可以使用科学计数法，例如 "[1e-2, 1E2)"
  */
-double rand_real(const char* format, ...) {
+template <typename T = double>
+typename std::enable_if<std::is_floating_point<T>::value, T>::type
+rand_real(const char* format,...) {
     FMT_TO_RESULT(format, format, _format);
-    std::pair<double,double> range = __format_to_double_range(_format);
+    std::pair<T, T> range = __format_to_double_range(_format);
     return rnd.next(range.first, range.second);
+}
+
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, std::pair<T, T>>::type
+__format_to_range(std::string s) {
+    return __format_to_int_range<T>(s);
+}
+
+template<typename T>
+typename std::enable_if<std::is_floating_point<T>::value, std::pair<T, T>>::type
+__format_to_range(std::string s) {
+    return __format_to_double_range<T>(s);
+}
+
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+__rand_range(std::string s) {
+    return rand_int<T>(s.c_str());
+}
+
+template<typename T>
+typename std::enable_if<std::is_floating_point<T>::value, T>::type
+__rand_range(std::string s) {
+    return rand_real<T>(s.c_str());
+}
+
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+__rand_range(T from, T to) {
+    return rand_int<T>(from, to);
+}
+
+template<typename T>
+typename std::enable_if<std::is_floating_point<T>::value, T>::type
+__rand_range(T from, T to) {
+    return rand_real<T>(from, to);
 }
 
 /**
@@ -1832,7 +1948,7 @@ public:
         int edge_cnt = 0;
         std::vector<_Edge<EdgeType>> output_edges = __get_output_edges();
         for (_Edge<EdgeType> e: output_edges) {
-            if (_swap_node && rnd.next(2)) {
+            if (_swap_node && rand_numeric::rand_bool()) {
                 e.set_output_default(true);
             }
             os << e;
@@ -2700,7 +2816,7 @@ public:
         }
         int edge_cnt = 0;
         for (_Edge<EdgeType> e: __get_output_edges()) {
-            if (_swap_node && rnd.next(2)) {
+            if (_swap_node && rand_numeric::rand_bool()) {
                 e.set_output_default(true);
             }
             os << e;
@@ -5038,8 +5154,6 @@ _Tree<NodeType, EdgeType> __link(
     return impl.get_result();
 }
 
-#undef _OTHER_OUTPUT_FUNCTION_SETTING
-#undef _OUTPUT_FUNCTION
 #undef _DEF_GEN_FUNCTION
 #undef _DISABLE_CHOOSE_GEN
 #undef _MUST_IS_ROOTED
@@ -5391,6 +5505,453 @@ namespace both_weight{
     }     
 }
 
+}
+
+namespace geometry {
+std::pair<std::string, std::string> __format_xy_range(std::string format) {          
+    auto find_range = [&](std::string s) -> std::string {
+        size_t pos_c = format.find_first_of(s);
+        if (pos_c == std::string::npos) {
+            pos_c = s == "xX" ? 0 : format.find_first_of(")]");
+        }
+        size_t open = format.find_first_of("[(", pos_c);
+        size_t close = format.find_first_of(")]", pos_c);
+        if (open == std::string::npos || close == std::string::npos) {
+            return std::string("");
+        }
+        return format.substr(open, close - open + 1);
+    };
+    std::string x_range = find_range("xX");
+    std::string y_range = find_range("yY");
+    if (x_range.empty() && y_range.empty()) {
+        __msg::__fail_msg(__msg::_err, "%s is not a valid range.", format.c_str());
+    }
+    if (x_range.empty()) x_range = y_range;
+    if (y_range.empty()) y_range = x_range;
+    return std::make_pair(x_range, y_range);
+}
+
+#if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
+    using MaxIntType = __int128;
+    std::ostream& operator<<(std::ostream& os, __int128 value) {
+        if (value < 0) {
+            os << "-";
+            value = -value;
+        }
+
+        std::string str;
+        while (value > 0) {
+            str.insert(str.begin(), '0' + (value % 10));
+            value /= 10;
+        }
+
+        if (str.empty()) {
+            str = "0";
+        }
+
+        os << str;
+        return os;
+    }
+#else
+    using MaxIntType = long long;
+#endif
+
+template<typename T>
+struct is_signed_integral {
+    static const bool value = std::is_integral<T>::value && !std::is_unsigned<T>::value;
+};
+
+template<typename T>
+struct is_point_type {
+    static const bool value = is_signed_integral<T>::value || std::is_floating_point<T>::value;
+};
+
+template<typename T>
+struct __ResultType {
+    using type = typename std::conditional<
+        is_signed_integral<T>::value,   
+        MaxIntType,
+        double 
+    >::type;
+};
+
+template<typename T>
+using __ResultTypeT = typename __ResultType<T>::type;
+
+template <typename T> class __2Points;
+
+template<typename T, typename = typename std::enable_if<is_point_type<T>::value>::type>
+class Point {
+protected:
+    typedef Point<T> _Self;
+    _OUTPUT_FUNCTION(_Self)
+public:
+    Point():_x(0),_y(0) { _output_function = default_function(); };
+    Point(T x,T y):_x(x),_y(y) { _output_function = default_function(); };
+    Point(const __2Points<T>& p) { *this = p.end() - p.start(); };
+    ~Point() = default;
+    Point operator+(const Point& b){ return Point(_x + b._x, _y + b._y); }
+    Point& operator+=(const Point& b) {
+        _x += b._x;
+        _y += b._y;
+        return *this;
+    }
+    Point operator-(const Point& b){ return Point(_x - b._x, _y - b._y); }
+    Point& operator-=(const Point& b) {
+        _x -= b._x;
+        _y -= b._y;
+        return *this;
+    }
+    T& operator[](int idx) { return idx == 0 ? _x : _y; }
+    T& operator[](char c) { return c=='x' || c=='X' ? _x : _y; }
+    T& operator[](std::string s) {
+        if(s.empty()) __msg::__fail_msg(__msg::_err,"Index s is an empty string.");
+        return this->operator[](s[0]);
+    }
+    bool operator==(const Point<T>& p) const{ return this->_x == p._x && this->_y == p._y; }
+    bool operator!=(const Point<T>& p) const{ return !(*this == p); }
+    bool operator<(const Point<T>& p) const{ return this->_x < p._x || (this->_x == p._x && this->_y < p._y); }
+    bool operator<=(const Point<T>& p) const{ return *this < p || *this == p; }
+    bool operator>(const Point<T>& p) const { return !(*this <= p); }
+    bool operator>=(const Point<T>& p) const { return !(*this < p); }
+    T x() const { return _x; }
+    T y() const { return _y; }
+    T& x_ref(){ return _x; }
+    T& y_ref(){ return _y; }
+    void default_output(std::ostream& os) const {
+        os << _x << " " << _y;
+    }
+    
+    void rand(T x_left, T x_right, T y_left, T y_right) {
+        _x = rand_numeric::__rand_range<T>(x_left, x_right);
+        _y = rand_numeric::__rand_range<T>(y_left, y_right);
+    }
+    
+    void rand(T left, T right) {
+        _x = rand_numeric::__rand_range<T>(left, right);
+        _y = rand_numeric::__rand_range<T>(left, right);
+    }
+    
+    void rand(const char* format,...) {
+        FMT_TO_RESULT(format, format, _format);
+        auto xy_range = __format_xy_range(_format);
+        _x = rand_numeric::__rand_range<T>(xy_range.first);
+        _y = rand_numeric::__rand_range<T>(xy_range.second);
+    }
+    
+    __ResultTypeT<T> operator^(const Point& b) const{ 
+        __ResultTypeT<T> x1 = this->x();
+        __ResultTypeT<T> y1 = this->y();
+        __ResultTypeT<T> x2 = b.x();
+        __ResultTypeT<T> y2 = b.y();
+        return x1 * y2 - y1 * x2;
+    }
+    
+    __ResultTypeT<T> operator*(const Point& b) const{ 
+        __ResultTypeT<T> x1 = this->x();
+        __ResultTypeT<T> y1 = this->y();
+        __ResultTypeT<T> x2 = b.x();
+        __ResultTypeT<T> y2 = b.y();
+        return x1 * x2 + y1 * y2;
+    }
+    
+    _OTHER_OUTPUT_FUNCTION_SETTING(_Self)
+protected:
+    T _x, _y;
+};
+
+template <typename T>
+using Vec2 = Point<T>;
+
+template <typename T>
+class __2Points {
+public:
+    __2Points(const Point<T>& start, const Point<T>& end) : _start(start), _end(end) {}
+    
+    Point<T> start() const { return _start; }
+    Point<T> end() const { return _end; }
+    Point<T>& start_ref() { return _start; }
+    Point<T>& end_ref() { return _end; }
+protected:
+    Point<T> _start, _end;  
+};
+
+template <typename T>
+typename std::enable_if<is_point_type<T>::value, Point<T>>::type
+rand_point(T x_left, T x_right, T y_left, T y_right) {
+    Point<T> point;
+    point.rand(x_left, x_right, y_left, y_right);
+    return point;
+}
+
+template <typename T>
+typename std::enable_if<is_point_type<T>::value, Point<T>>::type
+rand_point(T left, T right) {
+    Point<T> point;
+    point.rand(left, right);
+    return point;
+}
+
+template <typename T>
+typename std::enable_if<is_point_type<T>::value, Point<T>>::type
+rand_point(const char* format, ...) {
+    FMT_TO_RESULT(format, format, _format);
+    Point<T> point;
+    point.rand(_format.c_str());
+    return point;
+}
+
+template <typename T>
+typename std::enable_if<is_point_type<T>::value, int>::type
+__quadrant(Point<T> p) {
+    return ((p.y() < 0) << 1) | ((p.x() < 0) ^ (p.y() < 0));
+}
+
+template <typename T>
+using _Points = std::vector<Point<T>>;
+
+template <typename T>
+typename std::enable_if<is_point_type<T>::value, void>::type        
+__polar_angle_sort(_Points<T>& points, Point<T> o = Point<T>()) {
+    std::sort(points.begin(), points.end(), [&](Point<T> a, Point<T> b) {
+        Point<T> oa = a - o;
+        Point<T> ob = b - o;
+        int quadrant_a = __quadrant(oa);
+        int quadrant_b = __quadrant(ob);
+        if (quadrant_a == quadrant_b) {
+            __ResultTypeT<T> cross = oa ^ ob;
+            if (cross == 0) return a.x() < b.x();
+            return cross > 0;
+        }
+        return quadrant_a < quadrant_b;
+    });
+}
+
+// https://stackoverflow.com/questions/6758083/how-to-generate-a-random-convex-polygon/
+template<typename T, typename = typename std::enable_if<is_point_type<T>::value>::type>
+class ConvexHull {
+protected:
+    typedef ConvexHull<T> _Self;
+    _OUTPUT_FUNCTION(_Self)
+protected:
+    int _node_count;
+    _Points<T> _points;
+    int _max_try;
+    T _x_left_limit;
+    T _x_right_limit;
+    T _y_left_limit;
+    T _y_right_limit;
+    bool _output_node_count;
+public:
+    ConvexHull(int node_count = 1, T x_left_limit = 0, T x_right_limit = 0, T y_left_limit = 0, T y_right_limit = 0) :
+        _node_count(node_count), _max_try(10), 
+        _x_left_limit(x_left_limit), _x_right_limit(x_right_limit),
+        _y_left_limit(y_left_limit), _y_right_limit(y_right_limit),
+        _output_node_count(true) 
+    {
+        _output_function = default_function();        
+    }
+    
+    int node_count() const { return _node_count; }
+    _Points<T> points() const { return _points; }
+    int max_try() const { return _max_try; }
+    T x_left_limit() const { return _x_left_limit; }
+    T x_right_limit() const { return _x_right_limit; }
+    T y_left_limit() const { return _y_left_limit; }
+    T y_right_limit() const { return _y_right_limit; }
+    
+    int& node_count_ref() { return _node_count; }
+    _Points<T>& points_ref() { return _points; }
+    int& max_try_ref() { return _max_try; }
+    T& x_left_limit_ref() { return _x_left_limit; }
+    T& x_right_limit_ref() { return _x_right_limit; }
+    T& y_left_limit_ref() { return _y_left_limit; }
+    T& y_right_limit_ref() { return _y_right_limit; }
+    
+    void set_node_count(int node_count) { _node_count = node_count; }
+    void set_max_try(int max_try)  { _max_try = max_try; }
+    void set_x_left_limit(T x_left_limit) { _x_left_limit = x_left_limit; }
+    void set_x_right_limit(T x_right_limit) { _x_right_limit = x_right_limit; }
+    void set_y_left_limit(T y_left_limit) { _y_left_limit = y_left_limit; }
+    void set_y_right_limit(T y_right_limit) { _y_right_limit = y_right_limit; }
+    void set_x_limit(T x_left_limit, T x_right_limit) { _x_left_limit = x_left_limit; _x_right_limit = x_right_limit; }
+    void set_y_limit(T y_left_limit, T y_right_limit) { _y_left_limit = y_left_limit; _y_right_limit = y_right_limit; }
+    void set_xy_limit(T left, T right) { set_x_limit(left, right); set_y_limit(left, right); }
+    void set_output_node_count(bool output_node_count) { _output_node_count = output_node_count; }
+
+    void set_x_limit(const char* format, ...) {
+        FMT_TO_RESULT(format, format, _format);
+        auto range = rand_numeric::__format_to_range<T>(_format);
+        _x_left_limit = range.first;
+        _x_right_limit = range.second;
+    }
+    
+    void set_y_limit(const char* format, ...) {
+        FMT_TO_RESULT(format, format, _format);
+        auto range = rand_numeric::__format_to_range<T>(_format);
+        _y_left_limit = range.first;
+        _y_right_limit = range.second;
+    }
+    
+    void set_xy_limit(const char* format, ...) {
+        FMT_TO_RESULT(format, format, _format);
+        auto range = __format_xy_range(_format);
+        set_x_limit(range.first.c_str());
+        set_y_limit(range.second.c_str());
+    }
+    
+    void default_output(std::ostream& os) const {
+        if (_output_node_count) {
+            os << _node_count << "\n";
+        }
+        int points_count = 0;
+        for (auto p : _points) {
+            os << p;
+            if (++points_count < _node_count) {
+                os << "\n";
+            }
+        }
+    }
+    
+    void gen() {
+        __init();
+        __check_node_count();
+        __check_max_try();
+        __check_limit();
+        int try_time = 0;
+        bool success = false;
+        while(try_time < _max_try) {
+            try_time++;
+            success = __try_generate_once();
+            if (success) break;
+        }
+        if (!success) {
+            __msg::__fail_msg(__msg::_err, "Tried %d times, found no convex hull satisfied the condition.", _max_try);
+        }
+    }
+    _OTHER_OUTPUT_FUNCTION_SETTING(_Self)
+protected:
+    
+    void __init() {
+        _points.clear();
+    }
+    
+    void __check_node_count() {
+        if (_node_count <= 0) {
+            __msg::__fail_msg(__msg::_err, "At least one point.");
+        }
+    }
+    
+    void __check_max_try() {
+        if (_max_try <= 0) {
+            __msg::__fail_msg(__msg::_err, "At least try once.");
+        }
+    }
+    
+    void __check_limit() {
+        if (_x_left_limit > _x_right_limit) {
+            __msg::__fail_msg(__msg::_err, "range [%s, %s] for x-coordinate is valid.", 
+                std::to_string(_x_left_limit).c_str(), std::to_string(_x_right_limit).c_str());
+        }
+        if (_y_left_limit > _y_right_limit) {
+            __msg::__fail_msg(__msg::_err, "range [%s, %s] for y-coordinate is valid.", 
+                std::to_string(_y_left_limit).c_str(), std::to_string(_y_right_limit).c_str());
+        }
+    }
+
+    T __rand_x() { return rand_numeric::__rand_range<T>(_x_left_limit, _x_right_limit); }
+    T __rand_y() { return rand_numeric::__rand_range<T>(_y_left_limit, _y_right_limit); }
+    
+    void __rand_pool_to_vector(std::vector<T>& pool, std::vector<T>& vec) {
+        std::sort(pool.begin(), pool.end());
+        T min = pool.front();
+        T max = pool.back();
+        T lower = min;
+        T upper = min;
+        for (int i = 1; i < _node_count - 1; i++) {
+            T val = pool[i];
+            if (rand_numeric::rand_bool()) {
+                vec.emplace_back(val - lower);
+                lower = val;
+            }
+            else {
+                vec.emplace_back(upper - val);
+                upper = val;
+            }
+        }
+        vec.emplace_back(max - lower);
+        vec.emplace_back(upper - max);
+    }
+    
+    int __find_next_none_zero(std::vector<T>& v, int begin) {
+        for (size_t i = begin + 1; i < v.size(); i++) {
+            if (v[i] != 0) return i;
+        }
+        return -1;
+    }
+    
+    bool __zero_count_over(std::vector<T>& x, std::vector<T>& y) {
+        int count = 0;
+        for (auto p : x) count += (p == 0);
+        for (auto p : y) count += (p == 0);
+        return count > _node_count;
+    }
+    
+    bool __try_generate_once() {
+        std::vector<T> x_pool;
+        std::vector<T> y_pool;
+        for (int i = 0; i < _node_count; i++) {
+            x_pool.emplace_back(__rand_x());
+            y_pool.emplace_back(__rand_y());
+        }
+        std::vector<T> x_vec;
+        std::vector<T> y_vec;
+        __rand_pool_to_vector(x_pool, x_vec);
+        __rand_pool_to_vector(y_pool, y_vec);
+        if (__zero_count_over(x_vec, y_vec)) return false;
+        shuffle(x_vec.begin(), x_vec.end());
+        shuffle(y_vec.begin(), y_vec.end());
+        for (int i = 0; i < _node_count; i++) {
+            if (x_vec[i] != 0 || y_vec[i] != 0) continue;
+            int pos_x = __find_next_none_zero(x_vec, i);
+            int pos_y = __find_next_none_zero(y_vec, i);
+            if (pos_x == -1 && pos_y == -1) return false;
+            else if (pos_x == -1) std::swap(y_vec[i], y_vec[pos_y]);
+            else if (pos_y == -1) std::swap(x_vec[i], x_vec[pos_x]);
+            else rand_numeric::rand_bool() ? std::swap(x_vec[i], x_vec[pos_x]) : std::swap(y_vec[i], y_vec[pos_y]);
+        }
+        Point<T> o;
+        _Points<T> vec;
+        for (int i = 0; i < _node_count; i++) vec.emplace_back(x_vec[i], y_vec[i]);
+        __polar_angle_sort(vec);
+        T min_x = std::numeric_limits<T>::max();
+        T min_y = std::numeric_limits<T>::max();
+        for (auto& v : vec) {
+            o += v;
+            _points.emplace_back(o);
+            min_x = std::min(min_x, o.x());
+            min_y = std::min(min_y, o.y());
+        }
+        Point<T> min(min_x, min_y);
+        Point<T> origin_min(_x_left_limit, _y_left_limit);
+        Point<T> shift = origin_min - min;
+        T x_max_move = _x_right_limit - _x_left_limit;
+        T y_max_move = _y_right_limit - _y_left_limit;
+        for (Point<T>& point : _points) {
+            point += shift;
+            x_max_move = std::min(x_max_move, _x_right_limit - point.x());
+            y_max_move = std::min(y_max_move, _y_right_limit - point.y());
+        }
+        Point<T> move = rand_point((T)0, x_max_move, (T)0, y_max_move);
+        for (Point<T>& point : _points) point += move;
+        return true;
+    }
+};
+    
+#undef _OUTPUT_FUNCTION
+#undef _COMMON_OUTPUT_FUNCTION_SETTING
+#undef _OTHER_OUTPUT_FUNCTION_SETTING
+#undef _EDGE_OUTPUT_FUNCTION_SETTING
 }
 
 namespace all {

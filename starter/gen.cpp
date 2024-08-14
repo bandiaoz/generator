@@ -16,6 +16,7 @@ int main() {
     }
 
     // fill_outputs_exe("./std");
+    validate(1, 20, "./val");
     show_output_first_line();
     check_output();
 

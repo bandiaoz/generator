@@ -610,6 +610,24 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
         }
     }
 }
+
+/**
+ * @brief 检查当前文件夹下的所有 .in 文件，使用 val 进行验证
+ */
+void validate(int from, int to, Path val_path) {
+    if (!val_path.__file_exists()) {
+        __msg::__warn_msg(__msg::_err, "val doesn't exist.");
+        return;
+    }
+    val_path.full();
+    for (int index = from; index <= to; index++) {
+        //./val < a.in
+        std::string command = std::format("{0} < {1}.in", val_path.path(), index);
+        if (int return_code = system(command.c_str()); return_code != 0) {
+            __msg::__fail_msg(__msg::_err, std::format("Validation failed in case {0}.", index).c_str());
+        }
+    }
+}
 }
 
 namespace rand_numeric {

@@ -23,6 +23,12 @@
       "problemMatcher": []
     },
     {
+      "label": "copy val.cpp", // 复制一份 gen.cpp 到当前文件夹
+      "type": "shell",
+      "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/generator/starter/val.cpp ${fileDirname}/val.cpp",
+      "problemMatcher": []
+    },
+    {
       "label": "copy compare.cpp", // 复制一份 compare.cpp 到当前文件夹
       "type": "shell",
       "command": "cp /Users/chenjinglong/algorithm_competition/nowcoder/generator/starter/compare.cpp ${fileDirname}/compare.cpp",

@@ -278,6 +278,37 @@ void graph_constructor_test() {
     node_weight::Graph<int> g_node_weight(n, m);
     edge_weight::Graph<int> g_edge_weight(n, m);
 }
+void tree_constructor_test() {
+    int n = 10;
+    // 以带点权边权的树为例，生成一个 n 个点的树
+    both_weight::Tree<int, int> tree(n);
+    tree.set_node_count(n); // 设置点的数量
+    tree.set_is_rooted(true); // 设置是否是有根树，默认为 false
+    tree.set_root(1); // 设置根的编号，默认为 1，如果不是有根树，会有警告
+    tree.set_begin_node(1); // 设置点的起始编号，默认为 1
+    tree.set_output_node_count(false); // 设置是否输出点的数量，默认为 true
+    tree.set_output_root(false); // 设置是否输出根的编号，默认为 true
+    tree.set_swap_node(false); // 设置是否随机交换 fa, u，默认为有根树交换，无根树不交换，注意不要在无根树下设置为交换
+    tree.set_node_indices(std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}); // 设置点的编号
+    tree.set_node_indices(1, 11); // 将 1 号点的编号设置为 11，注意 index 范围要在 [1, n] 之间
+    tree.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
+        return rand_int(1, 100);
+    });
+    tree.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
+        return rand_int(1, 100);
+    });
+
+    tree.set_tree_generator(generator::rand_graph::basic::RandomFather); // 设置生成树的方式，默认为随机父亲，期望高度为 O(log n)
+    tree.set_tree_generator(generator::rand_graph::basic::Pruefer); // 设置生成树的方式，期望高度为 O(sqrt(n))
+
+    tree.gen(); // 生成树
+    println(tree); // 输出树
+
+    // 类似地，生成不带权、带点权、带边权的树
+    unweight::Tree tree_unweight(n);
+    node_weight::Tree<int> tree_node_weight(n);
+    edge_weight::Tree<int> tree_edge_weight(n);
+}
 }
 
 int main() {

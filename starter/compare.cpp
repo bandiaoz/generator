@@ -1,6 +1,7 @@
 #include "generator.hpp"
 
 using namespace generator::all;
+using ll = long long;
 
 int main() {
     std::ios::sync_with_stdio(false);

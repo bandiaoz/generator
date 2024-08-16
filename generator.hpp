@@ -370,6 +370,70 @@ std::vector<int> __get_inputs() {
     return inputs;
 }
 /**
+ * @brief 判断 x.in 输入文件是否存在
+ */
+bool __input_file_exists(int x) {
+    __msg::Path file_path = __msg::Path(std::to_string(x) + ".in");
+    return file_path.__file_exists();
+}
+/**
+ * @brief 获得下一个空缺的输入文件编号
+ */
+int get_next_input() {
+    for (int i = 1; i <= 100; i++) {
+        if (!__input_file_exists(i)) {
+            return i;
+        }
+    }
+    __msg::__fail_msg(__msg::_err, "There are too many input files.");
+    return -1;
+}
+void __fill_inputs_impl(int number, std::function<void()> func, std::string format, bool need_seed) {
+    int sum = number;
+    for (int index = 1; sum; index++) {
+        if (!__input_file_exists(index)) {
+            sum--;
+            std::string filename = std::to_string(index) + ".in";
+            freopen(filename.c_str(), "w", stdout);
+            __fake_arg(format, need_seed);
+            try {
+                func();
+            } catch (...) {
+                __msg::__fail_msg(__msg::_err, "An exception occurred while writing the input file.");
+            }
+            __close_output_file_to_console();
+
+            std::ifstream file(filename);
+            if (file.peek() == std::ifstream::traits_type::eof()) {
+                __msg::__fail_msg(__msg::_err, std::format("input file {0} is empty.", filename).c_str());
+            }
+        }
+    }
+}
+/**
+ * @brief 生成 number 个输入文件，编号从 1 开始找到空缺的编号填充
+ */
+void fill_inputs(int number, std::function<void()> func, const char* format = "", ...) {
+    FMT_TO_RESULT(format, format, _format);
+    __fill_inputs_impl(number, func, _format, false);
+}
+/**
+ * @brief 生成一个输入文件，编号从 1 开始找到空缺的编号填充，并返回编号
+ */
+int fill_input(std::function<void()> func, const char* format = "", ...) {
+    int index = get_next_input();
+    FMT_TO_RESULT(format, format, _format);
+    __fill_inputs_impl(1, func, _format, false);
+    return index;
+}
+/**
+ * @brief 生成一个输入文件，编号从 1 开始找到空缺的编号填充，同时使用随机种子
+ */
+void fill_input_seed(std::function<void()> func, const char* format = "", ...) {
+    FMT_TO_RESULT(format, format, _format);
+    __fill_inputs_impl(1, func, _format, true);
+}
+/**
  * @brief 根据 func 生成输出文件，编号为 index
  */
 void __write_output_file(int index, std::function<void()> std_func) {
@@ -614,14 +678,16 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
 /**
  * @brief 检查当前文件夹下的所有 .in 文件，使用 val 进行验证
  */
-void validate(int from, int to, Path val_path) {
+void validate(Path val_path) {
     if (!val_path.__file_exists()) {
         __msg::__warn_msg(__msg::_err, "val doesn't exist.");
         return;
     }
     val_path.full();
-    for (int index = from; index <= to; index++) {
-        //./val < a.in
+    for (int index = 1; index <= 100; index++) {
+        if (!io::__input_file_exists(index)) {
+            continue;
+        }
         std::string command = std::format("{0} < {1}.in", val_path.path(), index);
         if (int return_code = system(command.c_str()); return_code != 0) {
             __msg::__fail_msg(__msg::_err, std::format("Validation failed in case {0}.", index).c_str());

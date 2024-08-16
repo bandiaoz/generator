@@ -5663,7 +5663,7 @@ struct is_point_type {
 };
 
 template<typename T>
-struct __ResultType {
+struct _ResultType {
     using type = typename std::conditional<
         is_signed_integral<T>::value,   
         MaxIntType,
@@ -5672,9 +5672,9 @@ struct __ResultType {
 };
 
 template<typename T>
-using __ResultTypeT = typename __ResultType<T>::type;
+using _ResultTypeT = typename _ResultType<T>::type;
 
-template <typename T> class __2Points;
+template <typename T> class _2Points;
 
 template<typename T, typename = typename std::enable_if<is_point_type<T>::value>::type>
 class Point {
@@ -5684,7 +5684,7 @@ protected:
 public:
     Point():_x(0),_y(0) { _output_function = default_function(); };
     Point(T x,T y):_x(x),_y(y) { _output_function = default_function(); };
-    Point(const __2Points<T>& p) { *this = p.end() - p.start(); };
+    Point(const _2Points<T>& p) { *this = p.end() - p.start(); };
     ~Point() = default;
     Point operator+(const Point& b){ return Point(_x + b._x, _y + b._y); }
     Point& operator+=(const Point& b) {
@@ -5735,19 +5735,19 @@ public:
         _y = rand_numeric::__rand_range<T>(xy_range.second);
     }
     
-    __ResultTypeT<T> operator^(const Point& b) const{ 
-        __ResultTypeT<T> x1 = this->x();
-        __ResultTypeT<T> y1 = this->y();
-        __ResultTypeT<T> x2 = b.x();
-        __ResultTypeT<T> y2 = b.y();
+    _ResultTypeT<T> operator^(const Point& b) const{ 
+        _ResultTypeT<T> x1 = this->x();
+        _ResultTypeT<T> y1 = this->y();
+        _ResultTypeT<T> x2 = b.x();
+        _ResultTypeT<T> y2 = b.y();
         return x1 * y2 - y1 * x2;
     }
     
-    __ResultTypeT<T> operator*(const Point& b) const{ 
-        __ResultTypeT<T> x1 = this->x();
-        __ResultTypeT<T> y1 = this->y();
-        __ResultTypeT<T> x2 = b.x();
-        __ResultTypeT<T> y2 = b.y();
+    _ResultTypeT<T> operator*(const Point& b) const{ 
+        _ResultTypeT<T> x1 = this->x();
+        _ResultTypeT<T> y1 = this->y();
+        _ResultTypeT<T> x2 = b.x();
+        _ResultTypeT<T> y2 = b.y();
         return x1 * x2 + y1 * y2;
     }
     
@@ -5760,9 +5760,9 @@ template <typename T>
 using Vec2 = Point<T>;
 
 template <typename T>
-class __2Points {
+class _2Points {
 public:
-    __2Points(const Point<T>& start, const Point<T>& end) : _start(start), _end(end) {}
+    _2Points(const Point<T>& start, const Point<T>& end) : _start(start), _end(end) {}
     
     Point<T> start() const { return _start; }
     Point<T> end() const { return _end; }
@@ -5815,7 +5815,7 @@ __polar_angle_sort(_Points<T>& points, Point<T> o = Point<T>()) {
         int quadrant_a = __quadrant(oa);
         int quadrant_b = __quadrant(ob);
         if (quadrant_a == quadrant_b) {
-            __ResultTypeT<T> cross = oa ^ ob;
+            _ResultTypeT<T> cross = oa ^ ob;
             if (cross == 0) return a.x() < b.x();
             return cross > 0;
         }
@@ -5986,7 +5986,7 @@ protected:
         return -1;
     }
     
-    bool __zero_count_over(std::vector<T>& x, std::vector<T>& y) {
+    bool __zero_count_overflow(std::vector<T>& x, std::vector<T>& y) {
         int count = 0;
         for (auto p : x) count += (p == 0);
         for (auto p : y) count += (p == 0);
@@ -6004,7 +6004,7 @@ protected:
         std::vector<T> y_vec;
         __rand_pool_to_vector(x_pool, x_vec);
         __rand_pool_to_vector(y_pool, y_vec);
-        if (__zero_count_over(x_vec, y_vec)) return false;
+        if (__zero_count_overflow(x_vec, y_vec)) return false;
         shuffle(x_vec.begin(), x_vec.end());
         shuffle(y_vec.begin(), y_vec.end());
         for (int i = 0; i < _node_count; i++) {

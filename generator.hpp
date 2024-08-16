@@ -767,7 +767,7 @@ template<>
 unsigned long long __string_to_value(const std::string& s) {
     if (__is_real_format(s)) 
         return (unsigned long long)__string_to_value<double>(s);
-    return std::stoll(s);
+    return std::stoull(s);
 }
 
 template<>
@@ -5946,11 +5946,11 @@ protected:
     
     void __check_limit() {
         if (_x_left_limit > _x_right_limit) {
-            __msg::__fail_msg(__msg::_err, "range [%s, %s] for x-coordinate is valid.", 
+            __msg::__fail_msg(__msg::_err, "range [%s, %s] for x-coordinate is invalid.", 
                 std::to_string(_x_left_limit).c_str(), std::to_string(_x_right_limit).c_str());
         }
         if (_y_left_limit > _y_right_limit) {
-            __msg::__fail_msg(__msg::_err, "range [%s, %s] for y-coordinate is valid.", 
+            __msg::__fail_msg(__msg::_err, "range [%s, %s] for y-coordinate is invalid.", 
                 std::to_string(_y_left_limit).c_str(), std::to_string(_y_right_limit).c_str());
         }
     }

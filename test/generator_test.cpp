@@ -288,7 +288,7 @@ void tree_constructor_test() {
     tree.set_begin_node(1); // 设置点的起始编号，默认为 1
     tree.set_output_node_count(false); // 设置是否输出点的数量，默认为 true
     tree.set_output_root(false); // 设置是否输出根的编号，默认为 true
-    tree.set_swap_node(false); // 设置是否随机交换 fa, u，默认为有根树交换，无根树不交换，注意不要在无根树下设置为交换
+    tree.set_swap_node(false); // 设置是否随机交换 fa, u，默认为有根树不交换，无根树交换，注意不要在有根树下设置为交换
     tree.set_node_indices(std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}); // 设置点的编号
     tree.set_node_indices(1, 11); // 将 1 号点的编号设置为 11，注意 index 范围要在 [1, n] 之间
     tree.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数

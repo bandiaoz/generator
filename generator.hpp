@@ -627,6 +627,7 @@ void validate(int from, int to, Path val_path) {
             __msg::__fail_msg(__msg::_err, std::format("Validation failed in case {0}.", index).c_str());
         }
     }
+    __msg::__success_msg(__msg::_err, "Validation passed.");
 }
 }
 
@@ -646,6 +647,9 @@ const unsigned long long __CHECK_LONG_LONG_MAX = (unsigned long long)std::numeri
 const unsigned long long __CHECK_ABS_LONG_LONG_MIN = __CHECK_LONG_LONG_MAX + 1ULL;
 const unsigned long long __CHECK_UNSIGNED_LONG_MAX = (unsigned long long)std::numeric_limits<unsigned long>::max();
 
+/**
+ * @brief 将字符串转换为 T 类型的值
+ */
 template<typename T>
 T __string_to_value(const std::string& s) {
     __msg::__fail_msg(__msg::_err, "Unsupported type.");
@@ -980,7 +984,6 @@ int __number_accuracy(const std::string& s) {
 template <typename T = double>
 typename std::enable_if<std::is_floating_point<T>::value, std::pair<T, T>>::type
 __format_to_double_range(std::string s) {
-    int accuracy = 1;
     size_t open = s.find_first_of("[(");
     size_t close = s.find_first_of(")]");
     size_t comma = s.find(',');
@@ -991,7 +994,7 @@ __format_to_double_range(std::string s) {
     std::string right_str = __sub_value_string(s, comma, close);
     T left = __string_to_value<T>(left_str);
     T right = __string_to_value<T>(right_str);
-    accuracy = std::max(accuracy, std::max(__number_accuracy(left_str), __number_accuracy(right_str)));
+    int accuracy = std::max({1, __number_accuracy(left_str), __number_accuracy(right_str)});
     double eps = std::pow(10.0, -accuracy);
     if(s[open] == '(') left += eps;
     if(s[close] == ']') right += eps;
@@ -1006,8 +1009,8 @@ template <typename T = double>
 typename std::enable_if<std::is_floating_point<T>::value, T>::type
 rand_real(const char* format,...) {
     FMT_TO_RESULT(format, format, _format);
-    std::pair<T, T> range = __format_to_double_range(_format);
-    return rnd.next(range.first, range.second);
+    auto [from, to] = __format_to_double_range(_format);
+    return rnd.next(from, to);
 }
 
 template<typename T>
@@ -1067,11 +1070,15 @@ rand_prob(const Con& map) {
     for (auto it : map){
         elements.emplace_back(it.first);
         ValueType value = it.second;
-        assert(value >= 0);
+        if (value < 0) {
+            __msg::__fail_msg(__msg::_err, "The value of the map must be a non-negative integer.");
+        }
         sum += value;
         probs.emplace_back(sum);
     }
-    assert(sum > 0);
+    if (sum == 0) {
+        __msg::__fail_msg(__msg::_err, "The sum of the map must be a positive integer.");
+    }
     long long p = rand_int(1LL, sum);
     auto pos = lower_bound(probs.begin(), probs.end(), p) - probs.begin();
     return *(elements.begin() + pos);
@@ -1109,7 +1116,9 @@ char rand_char(CharType type = LowerLetter) {
 char rand_char(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     std::string s = rnd.next(_format);
-    assert(!s.empty());
+    if (s.empty()) {
+        __msg::__fail_msg(__msg::_err, "Can't generator a char from an empty string.");
+    }
     return s.c_str()[0];
 }
 /**
@@ -1135,16 +1144,14 @@ std::string rand_string(int from, int to, CharType type = LowerLetter) {
  */
 std::string rand_string(int n, const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
-    std::string s = rnd.next("%s{%d}", _format.c_str(), n);
-    return s;
+    return rnd.next("%s{%d}", _format.c_str(), n);
 }
 /**
  * @brief 生成长度为 [from, to] 的随机字符串，字符类型由极简正则表达式 format 指定
  */
 std::string rand_string(int from, int to, const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
-    std::string s = rnd.next("%s{%d,%d}", _format.c_str(), from, to);
-    return s;
+    return rnd.next("%s{%d,%d}", _format.c_str(), from, to);
 }
 /**
  * @brief 生成长度为 n 的随机字符串，字符类型由极简正则表达式 format 指定
@@ -1175,7 +1182,12 @@ std::string rand_string(std::string format) {
  * @brief 生成长度为 n 的随机回文串，包含长度至少为 p 的回文子串
  */
 std::string __rand_palindrome_impl(int n, int p, std::string char_type) {
-    assert(n >= 0 && p >= 0 && p <= n);
+    if (n < 0) {
+        __msg::__fail_msg(__msg::_err, std::format("String length must be a non-negative integer, but found {0}.", n).c_str());
+    }
+    if (p < 0 || p > n) {
+        __msg::__fail_msg(__msg::_err, std::format("Palindrome length must be a non-negative integer and less than or equal to the string length, but found {0}.", p).c_str());
+    }
     std::string palindrome_part(p, ' ');
     for (int i = 0; i < (p + 1) / 2; i++) {
         char c = rand_char(char_type);

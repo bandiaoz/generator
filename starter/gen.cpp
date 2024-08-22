@@ -24,6 +24,7 @@ int main() {
         out >> ok;
         if (ok == "NO") {
             cases--;
+            std::remove(std::format("{}.in", index).c_str());
         }
     }
 

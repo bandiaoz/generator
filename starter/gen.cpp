@@ -8,11 +8,9 @@ int main() {
     std::cin.tie(nullptr);
     init_gen();
 
-    int limit = 10;
     fill_inputs(4, [&]() {
     });
 
-    limit = 1e5;
     fill_inputs(16, [&]() {
     });
 
@@ -28,8 +26,8 @@ int main() {
         }
     }
 
-    fill_outputs_exe("./std");
     validate("./val");
+    fill_outputs_exe("./std");
     show_output_first_line();
     check_output();
 

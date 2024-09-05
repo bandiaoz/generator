@@ -5626,7 +5626,7 @@ std::pair<std::string, std::string> __format_xy_range(std::string format) {
     std::string x_range = find_range("xX");
     std::string y_range = find_range("yY");
     if (x_range.empty() && y_range.empty()) {
-        __msg::__fail_msg(__msg::_err, "%s is not a valid range.", format.c_str());
+        __msg::__fail_msg(__msg::_err, "%s is not a vaild range.", format.c_str());
     }
     if (x_range.empty()) x_range = y_range;
     if (y_range.empty()) y_range = x_range;
@@ -5693,19 +5693,19 @@ public:
         _y_left_limit(y_left_limit), _y_right_limit(y_right_limit) {}  
         
 protected:
-    T __rand_x() { return rand::__rand_range<T>(_x_left_limit, _x_right_limit); }
-    T __rand_y() { return rand::__rand_range<T>(_y_left_limit, _y_right_limit); }
+    T __rand_x() { return rand_numeric::__rand_range<T>(_x_left_limit, _x_right_limit); }
+    T __rand_y() { return rand_numeric::__rand_range<T>(_y_left_limit, _y_right_limit); }
     
     void __set_x_limit(T x_left_limit, T x_right_limit) { _x_left_limit = x_left_limit; _x_right_limit = x_right_limit; }
     void __set_y_limit(T y_left_limit, T y_right_limit) { _y_left_limit = y_left_limit; _y_right_limit = y_right_limit; }
     void __set_xy_limit(T left, T right) { __set_x_limit(left, right); __set_y_limit(left, right); }
     void __set_xy_limit(T x_left, T x_right, T y_left, T y_right) { __set_x_limit(x_left, x_right); __set_y_limit(y_left, y_right); }
     void __set_x_limit(std::string format) {
-        auto range = rand::__format_to_range<T>(format);
+        auto range = rand_numeric::__format_to_range<T>(format);
         __set_x_limit(range.first, range.second);
     } 
     void __set_y_limit(std::string format) {
-        auto range = rand::__format_to_range<T>(format);
+        auto range = rand_numeric::__format_to_range<T>(format);
         __set_y_limit(range.first, range.second);
     }
     void __set_xy_limit(std::string format) {
@@ -5716,11 +5716,11 @@ protected:
     
     void __check_range_limit() {
         if (this->_x_left_limit > this->_x_right_limit) {
-            io::__fail_msg(io::_err, "range [%s, %s] for x-coordinate is invalid.", 
+            __msg::__fail_msg(__msg::_err, "range [%s, %s] for x-coordinate is invalid.", 
                 std::to_string(this->_x_left_limit).c_str(), std::to_string(this->_x_right_limit).c_str());
         }
         if (this->_y_left_limit > this->_y_right_limit) {
-            io::__fail_msg(io::_err, "range [%s, %s] for y-coordinate is invalid.", 
+            __msg::__fail_msg(__msg::_err, "range [%s, %s] for y-coordinate is invalid.", 
                 std::to_string(this->_y_left_limit).c_str(), std::to_string(this->_y_right_limit).c_str());
         }
     }
@@ -5808,7 +5808,7 @@ public:
     T& operator[](int idx) { return idx == 0 ? _x : _y; }
     T& operator[](char c) { return c=='x' || c=='X' ? _x : _y; }
     T& operator[](std::string s) {
-        if(s.empty()) io::__fail_msg(io::_err,"Index s is an empty string.");
+        if(s.empty()) __msg::__fail_msg(__msg::_err,"Index s is an empty string.");
         return this->operator[](s[0]);
     }
     bool operator==(const Point<T>& p) const{ return this->_x == p._x && this->_y == p._y; }
@@ -5936,7 +5936,7 @@ protected:
     void __check_count_limit() {
         if (this->_x_left_limit == this->_x_right_limit && 
             this->_y_left_limit == this->_y_right_limit) {
-                io::__fail_msg(io::_err, "Number of points in space must greater than one.");
+                __msg::__fail_msg(__msg::_err, "Number of points in space must greater than one.");
             }
     }          
     
@@ -6015,31 +6015,6 @@ PointDirection point_direction(Point<T> a, Segment<T> s) {
     return point_direction(a, s.start, s.end);
 }
 
-enum PointDirection {
-    COUNTER_CLOCKWISE,
-    CLOCKWISE,
-    ONLINE_BACK,
-    ONLINE_FRONT,
-    ON_SEGMENT
-};
-
-template <typename T>
-PointDirection point_direction(Point<T> a, Point<T> b, Point<T> c) {
-    b = b - a;
-    c = c - a;
-    _ResultTypeT<T> cross = b ^ c;
-    if (cross > 0) return COUNTER_CLOCKWISE;
-    if (cross < 0) return CLOCKWISE;
-    if (b * c < 0) return ONLINE_BACK;
-    if (b * b < c * c) return ONLINE_FRONT;
-    return ON_SEGMENT;
-}
-
-template <typename T>
-PointDirection point_direction(Point<T> a, Segment<T> s) {
-    return point_direction(a, s.start, s.end);
-}
-
 // https://stackoverflow.com/questions/6758083/how-to-generate-a-random-convex-polygon/
 template<typename T, typename = typename std::enable_if<is_point_type<T>::value>::type>
 class ConvexHull : public _RandXYRange<T> {
@@ -6054,13 +6029,7 @@ protected:
 public:
     ConvexHull(int node_count = 1, T x_left_limit = 0, T x_right_limit = 0, T y_left_limit = 0, T y_right_limit = 0) :
         _RandXYRange<T>(x_left_limit, x_right_limit, y_left_limit, y_right_limit),
-        _node_count(node_count), _max_try(10), 
-        _node_count(node_count), _max_try(10), 
-        _x_left_limit(x_left_limit), _x_right_limit(x_right_limit),
-        _y_left_limit(y_left_limit), _y_right_limit(y_right_limit),
         _node_count(node_count), _max_try(10),
-        _x_left_limit(x_left_limit), _x_right_limit(x_right_limit),
-        _y_left_limit(y_left_limit), _y_right_limit(y_right_limit),
         _output_node_count(true) 
     {
         _output_function = default_function();        

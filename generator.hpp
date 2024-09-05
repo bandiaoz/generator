@@ -294,6 +294,7 @@ void init_gen() {
  * @brief 将标准输出重定向回控制台或终端
  */
 void __close_output_file_to_console() {
+    fflush(stdout);
 #ifdef _WIN32
     freopen("CON", "w", stdout);
 #else
@@ -305,6 +306,7 @@ void __close_output_file_to_console() {
  * @brief 将标准输入重定向回控制台或终端
  */
 void __close_input_file_to_console() {
+    if (std::cin.eof()) std::cin.clear();
 #ifdef _WIN32
     freopen("CON", "r", stdin);
 #else
@@ -932,10 +934,12 @@ rand_odd(T from, U to) {
 /**
  * @brief 生成给定范围内的随机奇数
  */
-long long rand_odd(const char* format, ...) {
+template <typename T = long long>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+rand_odd(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
-    auto [from, to] = __format_to_int_range(_format);
-    return __rand_odd_impl<long long>(from, to);
+    std::pair<T, T> range = __format_to_int_range(_format);
+    return __rand_odd_impl<T>(range.first, range.second);
 }
 
 template <typename T>
@@ -967,10 +971,12 @@ rand_even(T from, U to) {
 /**
  * @brief 生成给定范围内的随机偶数
  */
-long long rand_even(const char* format, ...) {
+template <typename T = long long>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+rand_even(const char* format,...) {
     FMT_TO_RESULT(format, format, _format);
-    auto [from, to] = __format_to_int_range(_format);
-    return __rand_even_impl<long long>(from, to);
+    std::pair<T, T> range = __format_to_int_range(_format);
+    return __rand_even_impl<T>(range.first, range.second);
 }
 
 /**
@@ -5982,6 +5988,31 @@ __polar_angle_sort(_Points<T>& points, Point<T> o = Point<T>()) {
         }
         return quadrant_a < quadrant_b;
     });
+}
+
+enum PointDirection {
+    COUNTER_CLOCKWISE,
+    CLOCKWISE,
+    ONLINE_BACK,
+    ONLINE_FRONT,
+    ON_SEGMENT
+};
+
+template <typename T>
+PointDirection point_direction(Point<T> a, Point<T> b, Point<T> c) {
+    b = b - a;
+    c = c - a;
+    _ResultTypeT<T> cross = b ^ c;
+    if (cross > 0) return COUNTER_CLOCKWISE;
+    if (cross < 0) return CLOCKWISE;
+    if (b * c < 0) return ONLINE_BACK;
+    if (b * b < c * c) return ONLINE_FRONT;
+    return ON_SEGMENT;
+}
+
+template <typename T>
+PointDirection point_direction(Point<T> a, Segment<T> s) {
+    return point_direction(a, s.start, s.end);
 }
 
 enum PointDirection {

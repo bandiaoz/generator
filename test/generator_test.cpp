@@ -278,6 +278,9 @@ void graph_constructor_test() {
     node_weight::Graph<int> g_node_weight(n, m);
     edge_weight::Graph<int> g_edge_weight(n, m);
 }
+/**
+ * @brief 随机树测试
+ */
 void tree_constructor_test() {
     int n = 10;
     // 以带点权边权的树为例，生成一个 n 个点的树
@@ -309,12 +312,37 @@ void tree_constructor_test() {
     node_weight::Tree<int> tree_node_weight(n);
     edge_weight::Tree<int> tree_edge_weight(n);
 }
+/**
+ * @brief 随机森林测试
+ * @note 根据 `_trees_size` 来生成森林，每个树的大小由 `_trees_size` 决定。
+ */
+void forest_constructor_test() {
+    int n = 10000, m = rand_int(n - 10, n - 1);
+    // 以带点权边权的树为例，生成一个 n 个点 m 条边的森林，也就是有 n - m 个树
+    both_weight::Forest<int, int> forest(n, m);
+    forest.set_node_count(n); // 设置点的数量
+    forest.set_begin_node(1); // 设置点的起始编号，默认为 1
+    // forest.add_tree_size(5); // 添加一棵树，大小为 5
+    // forest.set_trees_size(std::vector{5, 3, 2}); // 设置每棵树的大小，会覆盖之前的设置
+    forest.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
+        return rand_int(1, 100);
+    });
+    forest.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
+        return rand_int(1, 100);
+    });
+
+    forest.gen(); // 生成森林
+    println(forest); // 输出森林
+
+    // 类似地，生成不带权、带点权、带边权的森林
+    unweight::Forest forest_unweight(n, m);
+    node_weight::Forest<int> forest_node_weight(n, m);
+    edge_weight::Forest<int> forest_edge_weight(n, m);
+}
 }
 
 int main() {
     init_gen();
-
-    
 
     return 0;
 }

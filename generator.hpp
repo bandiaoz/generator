@@ -331,7 +331,7 @@ void __write_input_file(int index, std::function<void()> func, std::string forma
     try {
         func();
     } catch (...) {
-        __msg::__fail_msg(__msg::_err, "An exception occurred while writing the input file.");
+        __msg::__fail_msg(__msg::_err, std::format("An exception occurred while writing the input file {0}.", filename).c_str());
     }
     __close_output_file_to_console();
 
@@ -408,7 +408,7 @@ void __fill_inputs_impl(int number, std::function<void()> func, std::string form
             try {
                 func();
             } catch (...) {
-                __msg::__fail_msg(__msg::_err, "An exception occurred while writing the input file.");
+                __msg::__fail_msg(__msg::_err, std::format("An exception occurred while writing the input file {0}.", filename).c_str());
             }
             __close_output_file_to_console();
 
@@ -662,7 +662,7 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
         try {
             gen_func();
         } catch (...) {
-            __msg::__fail_msg(__msg::_err, "An exception occurred while writing the input file.");
+            __msg::__fail_msg(__msg::_err, std::format("An exception occurred while writing the input file {0}.in.", index).c_str());
         }
         io::__close_output_file_to_console();
 

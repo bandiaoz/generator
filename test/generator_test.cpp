@@ -301,8 +301,8 @@ void tree_constructor_test() {
         return rand_int(1, 100);
     });
 
-    tree.set_tree_generator(generator::rand_graph::basic::RandomFather); // 设置生成树的方式，默认为随机父亲，期望高度为 O(log n)
-    tree.set_tree_generator(generator::rand_graph::basic::Pruefer); // 设置生成树的方式，期望高度为 O(sqrt(n))
+    tree.set_tree_generator(RandomFather); // 设置生成树的方式，默认为随机父亲，期望高度为 O(log n)
+    tree.set_tree_generator(Pruefer); // 设置生成树的方式，期望高度为 O(sqrt(n))
 
     tree.gen(); // 生成树
     println(tree); // 输出树

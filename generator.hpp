@@ -6159,5 +6159,7 @@ using namespace rand_numeric;
 using namespace rand_string;
 using namespace rand_vector;
 using namespace rand_graph;
+using generator::rand_graph::basic::RandomFather;
+using generator::rand_graph::basic::Pruefer;
 }
 }

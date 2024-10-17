@@ -313,6 +313,25 @@ void tree_constructor_test() {
     edge_weight::Tree<int> tree_edge_weight(n);
 }
 /**
+ * @brief 菊花带链测试
+ * @note 生成一个菊花带链，菊花的大小由 `_flower_size` 决定，链的大小由 `_chain_size` 决定。
+ *       继承自 `_Tree`，所以可以使用 `_Tree` 的除了「设置生成树的方法」外的所有方法。
+ */
+void flowerChain_constructor_test() {
+    int n = 10;
+    // 以不带点权边权的树为例，生成一个 n 个点的树
+    unweight::FlowerChain flowerChain_unweight(n);
+    flowerChain_unweight.set_flower_size(n / 10); // 设置菊花的大小，不设置则随机大小
+
+    flowerChain_unweight.gen(); // 生成树
+    println(flowerChain_unweight); // 输出树
+
+    // 类似地，生成带权点权边权、带点权、带边权的树
+    both_weight::FlowerChain<int, int> flowerChain_both_weight(n);
+    node_weight::FlowerChain<int> flowerChain_node_weight(n);
+    edge_weight::FlowerChain<int> flowerChain_edge_weight(n);
+}
+/**
  * @brief 随机森林测试
  * @note 根据 `_trees_size` 来生成森林，每个树的大小由 `_trees_size` 决定。
  */

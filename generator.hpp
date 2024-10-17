@@ -741,7 +741,7 @@ double __string_to_value(const std::string& s) {
 }
 
 bool __is_real_format(const std::string& s) {
-    return s.find_first_of("eE.");
+    return s.find_first_of("eE.") != std::string::npos;
 }
 
 template<>

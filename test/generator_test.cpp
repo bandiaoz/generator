@@ -248,25 +248,35 @@ void shuffle_index_test() {
 
 namespace rand_graph_test {
 /**
+ * @brief 随机边权生成函数
+ */
+auto edges_weight_function = []() {
+    return rand_int(1, 100);
+};
+/**
+ * @brief 随机点权生成函数
+ */
+auto nodes_weight_function = []() {
+    return rand_int(1, 100);
+};
+/**
  * @brief 随机图测试
  */
 void graph_constructor_test() {
-    int n = 10;
-    int m = 10;
+    int n = 10, m = 10, begin_node = 1;
     // 以带点权带边权的图为例，生成一个 n 个点 m 条边的图
-    both_weight::Graph<int, int> g(n, m);
-    g.set_begin_node(1); // 设置点的起始编号，默认为 1
+    both_weight::Graph<int, int> g(n, m, begin_node, 
+        nodes_weight_function, edges_weight_function);
+    g.set_begin_node(begin_node); // 设置点的起始编号，默认为 1
     g.set_direction(false); // 设置是否有向，默认为 false
     g.set_multiply_edge(false); // 设置是否允许重边，默认为 false
     g.set_self_loop(false); // 设置是否允许自环，默认为 false
     g.set_connect(false); // 设置是否连通，默认为 false
     g.set_swap_node(false); // 设置是否随机交换 u, v，默认为无向图交换，有向图不交换，注意不要在有向图下设置为交换
-    g.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
-        return rand_int(1, 100);
-    });
-    g.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
-        return rand_int(1, 100);
-    });
+    
+    g.set_nodes_weight_function(nodes_weight_function); // 如果有点权，设置点权的生成函数
+    g.set_edges_weight_function(edges_weight_function); // 如果有边权，设置边权的生成函数
+    
     g.set_output_node_count(true); // 设置是否输出点的数量，默认为 true
     g.set_output_edge_count(true); // 设置是否输出边的数量，默认为 true
 
@@ -283,19 +293,17 @@ void graph_constructor_test() {
  * @note 和随机图的区别在于，不允许设置有向/无向以及自环
  */
 void DAG_constructor_test() {
-    int n = 10;
-    int m = 10;
+    int n = 10, m = 10, begin_node = 1;
     // 以带点权带边权的有向无环图为例，生成一个 n 个点 m 条边的有向无环图
-    both_weight::DAG<int, int> dag(n, m);
-    dag.set_begin_node(1); // 设置点的起始编号，默认为 1
+    both_weight::DAG<int, int> dag(n, m, begin_node, 
+        nodes_weight_function, edges_weight_function);
+    dag.set_begin_node(begin_node); // 设置点的起始编号，默认为 1
     dag.set_multiply_edge(false); // 设置是否允许重边，默认为 false
     dag.set_connect(false); // 设置是否连通，默认为 false
-    dag.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
-        return rand_int(1, 100);
-    });
-    dag.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
-        return rand_int(1, 100);
-    });
+    
+    dag.set_nodes_weight_function(nodes_weight_function); // 如果有点权，设置点权的生成函数
+    dag.set_edges_weight_function(edges_weight_function); // 如果有边权，设置边权的生成函数
+
     dag.set_output_node_count(true); // 设置是否输出点的数量，默认为 true
     dag.set_output_edge_count(true); // 设置是否输出边的数量，默认为 true
 
@@ -308,27 +316,53 @@ void DAG_constructor_test() {
     edge_weight::Graph<int> dag_edge_weight(n, m);
 }
 /**
+ * @brief 随机环图测试
+ * @note 环图是无重边，无自环，一定连通，边数等于点数的首尾相接的图
+ */
+void cycle_graph_constructor_test() {
+    int n = 10, begin_node = 1;
+    // 以带点权带边权的环图为例，生成一个 n 个点的环图
+    both_weight::CycleGraph<int, int> cycle(n, begin_node, 
+        nodes_weight_function, edges_weight_function);
+    cycle.set_begin_node(begin_node); // 设置点的起始编号，默认为 1
+    cycle.set_direction(false); // 设置是否有向，默认为 false
+    cycle.set_nodes_weight_function(nodes_weight_function); // 如果有点权，设置点权的生成函数
+    cycle.set_edges_weight_function(edges_weight_function); // 如果有边权，设置边权的生成函数
+
+    cycle.set_output_node_count(true); // 设置是否输出点的数量，默认为 true
+    cycle.set_output_edge_count(true); // 设置是否输出边的数量，默认为 true
+
+    cycle.gen(); // 生成图
+    println(cycle); // 输出图
+
+    // 类似地，生成不带权、带点权、带边权的图
+    unweight::Graph cycle_unweight(n);
+    node_weight::Graph<int> cycle_node_weight(n);
+    edge_weight::Graph<int> cycle_edge_weight(n);
+}
+/**
  * @brief 随机树测试
  */
 void tree_constructor_test() {
-    int n = 10;
+    int n = 10, begin_node = 1;
+    bool is_rooted = false;
+    int root = 1;
     // 以带点权边权的树为例，生成一个 n 个点的树
-    both_weight::Tree<int, int> tree(n);
+    both_weight::Tree<int, int> tree(n, begin_node, is_rooted, root,
+        nodes_weight_function, edges_weight_function, 
+        RandomFather);
     tree.set_node_count(n); // 设置点的数量
-    tree.set_is_rooted(true); // 设置是否是有根树，默认为 false
-    tree.set_root(1); // 设置根的编号，默认为 1，如果不是有根树，会有警告
-    tree.set_begin_node(1); // 设置点的起始编号，默认为 1
+    tree.set_begin_node(begin_node); // 设置点的起始编号，默认为 1
+    tree.set_is_rooted(is_rooted); // 设置是否是有根树，默认为 false
+    tree.set_root(root); // 设置根的编号，默认为 1，如果不是有根树，会有警告
+
     tree.set_output_node_count(false); // 设置是否输出点的数量，默认为 true
     tree.set_output_root(false); // 设置是否输出根的编号，默认为 true
     tree.set_swap_node(false); // 设置是否随机交换 fa, u，默认为有根树不交换，无根树交换，注意不要在有根树下设置为交换
     tree.set_node_indices(std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}); // 设置点的编号
     tree.set_node_indices(1, 11); // 将 1 号点的编号设置为 11，注意 index 范围要在 [1, n] 之间
-    tree.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
-        return rand_int(1, 100);
-    });
-    tree.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
-        return rand_int(1, 100);
-    });
+    tree.set_nodes_weight_function(nodes_weight_function); // 如果有点权，设置点权的生成函数
+    tree.set_edges_weight_function(edges_weight_function); // 如果有边权，设置边权的生成函数
 
     tree.set_tree_generator(RandomFather); // 设置生成树的方式，默认为随机父亲，期望高度为 O(log n)
     tree.set_tree_generator(Pruefer); // 设置生成树的方式，期望高度为 O(sqrt(n))
@@ -347,16 +381,23 @@ void tree_constructor_test() {
  *       继承自 `_Tree`，所以可以使用 `_Tree` 的除了「设置生成树的方法」外的所有方法。
  */
 void flowerChain_constructor_test() {
-    int n = 10;
-    // 以不带点权边权的树为例，生成一个 n 个点的树
+    int n = 10, begin_node = 1;
+    bool is_rooted = false;
+    int root = 1;
+    int flower_size = -1; // 默认为-1，表示随机大小
+    // 以带点权边权的树为例，生成一个 n 个点的树
+    both_weight::FlowerChain<int, int> flowerChain(
+        n, begin_node, is_rooted, root, flower_size,
+        nodes_weight_function, edges_weight_function);
+    flowerChain.set_flower_size(n / 10); // 设置菊花的大小，注意菊花大小加链大小等于 n
+    flowerChain.set_nodes_weight_function(nodes_weight_function); // 如果有点权，设置点权的生成函数
+    flowerChain.set_edges_weight_function(edges_weight_function); // 如果有边权，设置边权的生成函数
+
+    flowerChain.gen(); // 生成树
+    println(flowerChain); // 输出树
+
+    // 类似地，生成不带权点权边权、带点权、带边权的树
     unweight::FlowerChain flowerChain_unweight(n);
-    flowerChain_unweight.set_flower_size(n / 10); // 设置菊花的大小，不设置则随机大小
-
-    flowerChain_unweight.gen(); // 生成树
-    println(flowerChain_unweight); // 输出树
-
-    // 类似地，生成带权点权边权、带点权、带边权的树
-    both_weight::FlowerChain<int, int> flowerChain_both_weight(n);
     node_weight::FlowerChain<int> flowerChain_node_weight(n);
     edge_weight::FlowerChain<int> flowerChain_edge_weight(n);
 }
@@ -365,19 +406,16 @@ void flowerChain_constructor_test() {
  * @note 根据 `_trees_size` 来生成森林，每个树的大小由 `_trees_size` 决定。
  */
 void forest_constructor_test() {
-    int n = 10000, m = rand_int(n - 10, n - 1);
+    int n = 10000, m = rand_int(n - 10, n - 1), begin_node = 1;
     // 以带点权边权的树为例，生成一个 n 个点 m 条边的森林，也就是有 n - m 个树
-    both_weight::Forest<int, int> forest(n, m);
+    both_weight::Forest<int, int> forest(n, m, begin_node, 
+        nodes_weight_function, edges_weight_function);
     forest.set_node_count(n); // 设置点的数量
     forest.set_begin_node(1); // 设置点的起始编号，默认为 1
     // forest.add_tree_size(5); // 添加一棵树，大小为 5
     // forest.set_trees_size(std::vector{5, 3, 2}); // 设置每棵树的大小，会覆盖之前的设置
-    forest.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
-        return rand_int(1, 100);
-    });
-    forest.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
-        return rand_int(1, 100);
-    });
+    forest.set_nodes_weight_function(nodes_weight_function); // 如果有点权，设置点权的生成函数
+    forest.set_edges_weight_function(edges_weight_function); // 如果有边权，设置边权的生成函数
 
     forest.gen(); // 生成森林
     println(forest); // 输出森林

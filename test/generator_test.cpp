@@ -341,6 +341,36 @@ void cycle_graph_constructor_test() {
     edge_weight::CycleGraph<int> cycle_edge_weight(n);
 }
 /**
+ * @brief 随机基环树测试
+ * @note 基环树是无重边，无自环，一定连通，边数一定的无向图
+ * @note 环的大小是 `cycle <= n`
+ * @note 注意默认输出方式和图相同，会输出点的数量和边的数量
+ */
+void pseudoTree_constructor_test() {
+    int n = 10, begin_node = 1, cycle = -1;
+    // 以带点权带边权的基环树为例，生成一个 n 个点的基环树
+    both_weight::PseudoTree<int, int> pseudoTree(n, begin_node, cycle, 
+        nodes_weight_function, edges_weight_function);
+    pseudoTree.set_begin_node(begin_node); // 设置点的起始编号，默认为 1
+    pseudoTree.set_swap_node(true); // 设置是否随机交换 u, v，默认为 true
+
+    pseudoTree.set_cycle(cycle); // 设置环的大小，默认为 -1，表示随机大小
+
+    pseudoTree.set_nodes_weight_function(nodes_weight_function); // 如果有点权，设置点权的生成函数
+    pseudoTree.set_edges_weight_function(edges_weight_function); // 如果有边权，设置边权的生成函数
+
+    pseudoTree.set_output_node_count(true); // 设置是否输出点的数量，默认为 true
+    pseudoTree.set_output_edge_count(true); // 设置是否输出边的数量，默认为 true
+
+    pseudoTree.gen(); // 生成图
+    println(pseudoTree); // 输出图
+
+    // 类似地，生成不带权、带点权、带边权的图
+    unweight::PseudoTree pseudoTree_unweight(n, cycle);
+    node_weight::PseudoTree<int> pseudoTree_node_weight(n, cycle);
+    edge_weight::PseudoTree<int> pseudoTree_edge_weight(n, cycle);
+}
+/**
  * @brief 随机树测试
  */
 void tree_constructor_test() {

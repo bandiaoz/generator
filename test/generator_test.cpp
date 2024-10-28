@@ -311,9 +311,9 @@ void DAG_constructor_test() {
     println(dag); // 输出图
 
     // 类似地，生成不带权、带点权、带边权的图
-    unweight::Graph dag_unweight(n, m);
-    node_weight::Graph<int> dag_node_weight(n, m);
-    edge_weight::Graph<int> dag_edge_weight(n, m);
+    unweight::DAG dag_unweight(n, m);
+    node_weight::DAG<int> dag_node_weight(n, m);
+    edge_weight::DAG<int> dag_edge_weight(n, m);
 }
 /**
  * @brief 随机环图测试
@@ -336,9 +336,9 @@ void cycle_graph_constructor_test() {
     println(cycle); // 输出图
 
     // 类似地，生成不带权、带点权、带边权的图
-    unweight::Graph cycle_unweight(n);
-    node_weight::Graph<int> cycle_node_weight(n);
-    edge_weight::Graph<int> cycle_edge_weight(n);
+    unweight::CycleGraph cycle_unweight(n);
+    node_weight::CycleGraph<int> cycle_node_weight(n);
+    edge_weight::CycleGraph<int> cycle_edge_weight(n);
 }
 /**
  * @brief 随机树测试

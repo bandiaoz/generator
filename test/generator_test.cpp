@@ -279,6 +279,35 @@ void graph_constructor_test() {
     edge_weight::Graph<int> g_edge_weight(n, m);
 }
 /**
+ * @brief 随机有向无环图测试
+ * @note 和随机图的区别在于，不允许设置有向/无向以及自环
+ */
+void DAG_constructor_test() {
+    int n = 10;
+    int m = 10;
+    // 以带点权带边权的有向无环图为例，生成一个 n 个点 m 条边的有向无环图
+    both_weight::DAG<int, int> dag(n, m);
+    dag.set_begin_node(1); // 设置点的起始编号，默认为 1
+    dag.set_multiply_edge(false); // 设置是否允许重边，默认为 false
+    dag.set_connect(false); // 设置是否连通，默认为 false
+    dag.set_nodes_weight_function([]() { // 如果有点权，设置点权的生成函数
+        return rand_int(1, 100);
+    });
+    dag.set_edges_weight_function([]() { // 如果有边权，设置边权的生成函数
+        return rand_int(1, 100);
+    });
+    dag.set_output_node_count(true); // 设置是否输出点的数量，默认为 true
+    dag.set_output_edge_count(true); // 设置是否输出边的数量，默认为 true
+
+    dag.gen(); // 生成图
+    println(dag); // 输出图
+
+    // 类似地，生成不带权、带点权、带边权的图
+    unweight::Graph dag_unweight(n, m);
+    node_weight::Graph<int> dag_node_weight(n, m);
+    edge_weight::Graph<int> dag_edge_weight(n, m);
+}
+/**
  * @brief 随机树测试
  */
 void tree_constructor_test() {

@@ -7,7 +7,7 @@
 
 namespace generator {
 
-namespace __msg {
+namespace io {
 class Path;
 class OutStream {
 public:
@@ -197,7 +197,7 @@ public:
      */
     std::string __file_name() {
         if (!this->__file_exists()) {
-            __msg::__fail_msg(__msg::_err, std::format("{0} is not a file path or the file doesn't exist.", _path).c_str());
+            io::__fail_msg(io::_err, std::format("{0} is not a file path or the file doesn't exist.", _path).c_str());
             return "";
         }
         __unify_split();
@@ -214,12 +214,12 @@ public:
     #ifdef _WIN32
         char buffer[MAX_PATH];
         if (GetFullPathNameA(_path.c_str(), MAX_PATH, buffer, nullptr) == 0) {
-            __msg::__fail_msg(__msg::_err, std::format("can't find full path :{0}.", _path).c_str());
+            io::__fail_msg(io::_err, std::format("can't find full path :{0}.", _path).c_str());
         }
     #else
         char buffer[1024];
         if (realpath(_path.c_str(), buffer) == nullptr) {
-            __msg::__fail_msg(__msg::_err, std::format("can't find full path :{0}.", _path).c_str());
+            io::__fail_msg(io::_err, std::format("can't find full path :{0}.", _path).c_str());
         }
     #endif
         _path = std::string(buffer);
@@ -331,13 +331,13 @@ void __write_input_file(int index, std::function<void()> func, std::string forma
     try {
         func();
     } catch (...) {
-        __msg::__fail_msg(__msg::_err, std::format("An exception occurred while writing the input file {0}.", filename).c_str());
+        io::__fail_msg(io::_err, std::format("An exception occurred while writing the input file {0}.", filename).c_str());
     }
     __close_output_file_to_console();
 
     std::ifstream file(filename);
     if (file.peek() == std::ifstream::traits_type::eof()) {
-        __msg::__fail_msg(__msg::_err, std::format("input file {0} is empty.", filename).c_str());
+        io::__fail_msg(io::_err, std::format("input file {0} is empty.", filename).c_str());
     }
 }
 void __make_inputs_impl(int start, int end, std::function<void()> func, std::string format, bool need_seed) {
@@ -372,7 +372,7 @@ void make_input_seed(int index, std::function<void()> func, const char* format =
 std::vector<int> __get_inputs() {
     std::vector<int> inputs;
     for (int i = 1; i <= 100; i++) {
-        if (__msg::Path(std::to_string(i) + ".in").__file_exists()) {
+        if (io::Path(std::to_string(i) + ".in").__file_exists()) {
             inputs.push_back(i);
         }
     }
@@ -382,7 +382,7 @@ std::vector<int> __get_inputs() {
  * @brief 判断 x.in 输入文件是否存在
  */
 bool __input_file_exists(int x) {
-    __msg::Path file_path = __msg::Path(std::to_string(x) + ".in");
+    io::Path file_path = io::Path(std::to_string(x) + ".in");
     return file_path.__file_exists();
 }
 /**
@@ -394,7 +394,7 @@ int get_next_input() {
             return i;
         }
     }
-    __msg::__fail_msg(__msg::_err, "There are too many input files.");
+    io::__fail_msg(io::_err, "There are too many input files.");
     return -1;
 }
 void __fill_inputs_impl(int number, std::function<void()> func, std::string format, bool need_seed) {
@@ -408,13 +408,13 @@ void __fill_inputs_impl(int number, std::function<void()> func, std::string form
             try {
                 func();
             } catch (...) {
-                __msg::__fail_msg(__msg::_err, std::format("An exception occurred while writing the input file {0}.", filename).c_str());
+                io::__fail_msg(io::_err, std::format("An exception occurred while writing the input file {0}.", filename).c_str());
             }
             __close_output_file_to_console();
 
             std::ifstream file(filename);
             if (file.peek() == std::ifstream::traits_type::eof()) {
-                __msg::__fail_msg(__msg::_err, std::format("input file {0} is empty.", filename).c_str());
+                io::__fail_msg(io::_err, std::format("input file {0} is empty.", filename).c_str());
             }
         }
     }
@@ -446,8 +446,8 @@ void fill_input_seed(std::function<void()> func, const char* format = "", ...) {
  * @brief 根据 func 生成输出文件，编号为 index
  */
 void __write_output_file(int index, std::function<void()> std_func) {
-    if (!__msg::Path(std::to_string(index) + ".in").__file_exists()) {
-        __msg::__fail_msg(__msg::_err, std::format("{0}.in doesn't exist.", index).c_str());
+    if (!io::Path(std::to_string(index) + ".in").__file_exists()) {
+        io::__fail_msg(io::_err, std::format("{0}.in doesn't exist.", index).c_str());
     }
     std::string filename_in = std::to_string(index) + ".in";
     std::string filename_out = std::to_string(index) + ".out";
@@ -456,7 +456,7 @@ void __write_output_file(int index, std::function<void()> std_func) {
     try {
         std_func();
     } catch (...) {
-        __msg::__fail_msg(__msg::_err, "An exception occurred in std code.");
+        io::__fail_msg(io::_err, "An exception occurred in std code.");
     }
     __close_input_file_to_console();
     __close_output_file_to_console();
@@ -469,7 +469,7 @@ std::ifstream make_output(int index, std::function<void()> std_func) {
     __write_output_file(index, std_func);
     std::ifstream file(std::to_string(index) + ".out");
     if (!file.is_open()) {
-        __msg::__fail_msg(__msg::_err, std::format("output file {0}.out is empty.", index).c_str());
+        io::__fail_msg(io::_err, std::format("output file {0}.out is empty.", index).c_str());
     }
     return file;
 }
@@ -489,7 +489,7 @@ void make_outputs(int start, int end, std::function<void()> std_func) {
 void fill_outputs(std::function<void()> std_func, bool cover_exist = true) {
     std::vector<int> inputs = __get_inputs();
     for (int i : inputs) {
-        if (!cover_exist && __msg::Path(std::to_string(i) + ".out").__file_exists()) {
+        if (!cover_exist && io::Path(std::to_string(i) + ".out").__file_exists()) {
             continue;
         }
         __write_output_file(i, std_func);
@@ -498,19 +498,19 @@ void fill_outputs(std::function<void()> std_func, bool cover_exist = true) {
 /**
  * @brief 根据 ./std 可执行文件生成 .out 输出文件
  */
-void __make_output_exe(int index, __msg::Path std_path) {
+void __make_output_exe(int index, io::Path std_path) {
     std_path.full();
     if (!std_path.__file_exists()) {
-        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
+        io::__fail_msg(io::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
     }
     std::string filename_in = std::to_string(index) + ".in";
-    if (!__msg::Path(filename_in).__file_exists()) {
-        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", filename_in).c_str());
+    if (!io::Path(filename_in).__file_exists()) {
+        io::__fail_msg(io::_err, std::format("{0} doesn't exist.", filename_in).c_str());
     }
     std::string filename_out = std::to_string(index) + ".out";
     std::string command = std::format("{0} < {1} > {2}", std_path.path(), filename_in, filename_out);
     if (int return_code = system(command.c_str()); return_code != 0) {
-        __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {}.", filename_out).c_str());
+        io::__fail_msg(io::_err, std::format("An exception occurred while creating the {}.", filename_out).c_str());
     }
 }
 /**
@@ -520,10 +520,10 @@ void __make_output_exe(int index, __msg::Path std_path) {
  */
 template <typename T>
 std::ifstream make_output_exe(int index, T path) {
-    __make_output_exe(index, __msg::Path(path));
+    __make_output_exe(index, io::Path(path));
     std::ifstream file(std::to_string(index) + ".out");
     if (!file.is_open()) {
-        __msg::__fail_msg(__msg::_err, std::format("output file {0}.out is empty.", index).c_str());
+        io::__fail_msg(io::_err, std::format("output file {0}.out is empty.", index).c_str());
     }
     return file;
 }
@@ -534,7 +534,7 @@ std::ifstream make_output_exe(int index, T path) {
 template <typename T>
 void make_outputs_exe(int start, int end, T path) {
     for (int index = start; index <= end; index++) {
-        __make_output_exe(index, __msg::Path(path));
+        __make_output_exe(index, io::Path(path));
     }
 }
 /**
@@ -544,13 +544,13 @@ void make_outputs_exe(int start, int end, T path) {
  */
 template <typename T>
 void fill_outputs_exe(T path, bool cover_exist = true) {
-    __msg::Path std_path(path);
+    io::Path std_path(path);
     std::vector<int> inputs = __get_inputs();
     for (int index : inputs) {
-        if (!cover_exist && __msg::Path(std::to_string(index) + ".out").__file_exists()) {
+        if (!cover_exist && io::Path(std::to_string(index) + ".out").__file_exists()) {
             continue;
         }
-        __make_output_exe(index, __msg::Path(path));
+        __make_output_exe(index, io::Path(path));
     }
 }
 /**
@@ -561,7 +561,7 @@ std::string __first_line_output(int index, int LENGTH) {
     std::ifstream file(std::to_string(index) + ".out");
     std::getline(file, first_line_output);
     if (first_line_output.empty()) {
-        __msg::__fail_msg(__msg::_err, std::format("output file {0}.out is empty.", index).c_str());
+        io::__fail_msg(io::_err, std::format("output file {0}.out is empty.", index).c_str());
     } else if (int(first_line_output.size()) > LENGTH) {
         first_line_output = first_line_output.substr(0, LENGTH) + "...";
     }
@@ -573,15 +573,15 @@ std::string __first_line_output(int index, int LENGTH) {
  */
 void show_output_first_line(int LENGTH = 20) {
     for (int i = 1; i <= 100; i++) {
-        if (__msg::Path(std::to_string(i) + ".out").__file_exists()) {
-            __msg::__success_msg(__msg::_err, std::format("{0}.out: {1}", i, __first_line_output(i, LENGTH)).c_str());
+        if (io::Path(std::to_string(i) + ".out").__file_exists()) {
+            io::__success_msg(io::_err, std::format("{0}.out: {1}", i, __first_line_output(i, LENGTH)).c_str());
         }
     }
 }
 }
 
 namespace checker {
-using __msg::Path;
+using io::Path;
 enum Checker {
     mycmp, // 自定义 checker
     lcmp,
@@ -610,7 +610,7 @@ int __run_checker(Path check_path, Path filename_in, Path filename_out, Path fil
 void __check_output(std::string prefix, Path check_path) {
     std::string filename_in = prefix + ".in";
     std::string filename_out = prefix + ".out";
-    if (__msg::Path(filename_in).__file_exists() && __msg::Path(filename_out).__file_exists()) {
+    if (io::Path(filename_in).__file_exists() && io::Path(filename_out).__file_exists()) {
         check_path.full();
         std::cerr << std::format("Case {0} : ", prefix);
         __run_checker(check_path, filename_in, filename_out, filename_out);
@@ -620,8 +620,8 @@ void __check_output(std::string prefix, Path check_path) {
  * @param 如果当前目录有 ./checker 可执行文件，判断输出是否正确；否则警告 checker 不存在
  */
 void check_output() {
-    if (!__msg::Path("checker").__file_exists()) {
-        __msg::__warn_msg(__msg::_err, "checker doesn't exist.");
+    if (!io::Path("checker").__file_exists()) {
+        io::__warn_msg(io::_err, "checker doesn't exist.");
         return;
     }
     Path checker_path("checker");
@@ -640,10 +640,10 @@ void check_output() {
  */
 void compare(int num_case, std::function<void()> gen_func, Path std_path, Path wa_path, Checker checker = wcmp) {
     if (!std_path.__file_exists()) {
-        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
+        io::__fail_msg(io::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
     }
     if (!wa_path.__file_exists()) {
-        __msg::__fail_msg(__msg::_err, std::format("{0} doesn't exist.", wa_path.cname()).c_str());
+        io::__fail_msg(io::_err, std::format("{0} doesn't exist.", wa_path.cname()).c_str());
     }
     std_path.full();
     wa_path.full();
@@ -662,7 +662,7 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
         try {
             gen_func();
         } catch (...) {
-            __msg::__fail_msg(__msg::_err, std::format("An exception occurred while writing the input file {0}.in.", index).c_str());
+            io::__fail_msg(io::_err, std::format("An exception occurred while writing the input file {0}.in.", index).c_str());
         }
         io::__close_output_file_to_console();
 
@@ -670,16 +670,16 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
         std::string filename_ans = "hack.ans";
         std::string command = std::format("{0} < {1} > {2}", std_path.path(), filename_in, filename_ans);
         if (int return_code = system(command.c_str()); return_code != 0) {
-            __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {0}.", filename_ans).c_str());
+            io::__fail_msg(io::_err, std::format("An exception occurred while creating the {0}.", filename_ans).c_str());
         }
         command = std::format("{0} < {1} > {2}", wa_path.path(), filename_in, filename_out);
         if (int return_code = system(command.c_str()); return_code != 0) {
-            __msg::__fail_msg(__msg::_err, std::format("An exception occurred while creating the {0}.", filename_out).c_str());
+            io::__fail_msg(io::_err, std::format("An exception occurred while creating the {0}.", filename_out).c_str());
         }
 
         int return_code = __run_checker(checker_path, filename_in, filename_out, filename_ans);
         if (return_code != 0) {
-            __msg::__fail_msg(__msg::_err, std::format("Wrong Answer in case {0}.", index).c_str());
+            io::__fail_msg(io::_err, std::format("Wrong Answer in case {0}.", index).c_str());
         }
     }
 }
@@ -689,7 +689,7 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
  */
 void validate(Path val_path) {
     if (!val_path.__file_exists()) {
-        __msg::__warn_msg(__msg::_err, "val doesn't exist.");
+        io::__warn_msg(io::_err, "val doesn't exist.");
         return;
     }
     val_path.full();
@@ -699,10 +699,10 @@ void validate(Path val_path) {
         }
         std::string command = std::format("{0} < {1}.in", val_path.path(), index);
         if (int return_code = system(command.c_str()); return_code != 0) {
-            __msg::__fail_msg(__msg::_err, std::format("Validation failed in case {0}.", index).c_str());
+            io::__fail_msg(io::_err, std::format("Validation failed in case {0}.", index).c_str());
         }
     }
-    __msg::__success_msg(__msg::_err, "Validation passed.");
+    io::__success_msg(io::_err, "Validation passed.");
 }
 }
 
@@ -727,7 +727,7 @@ const unsigned long long __CHECK_UNSIGNED_LONG_MAX = (unsigned long long)std::nu
  */
 template<typename T>
 T __string_to_value(const std::string& s) {
-    __msg::__fail_msg(__msg::_err, "Unsupported type.");
+    io::__fail_msg(io::_err, "Unsupported type.");
 }
 
 template<>
@@ -797,7 +797,7 @@ unsigned int __rand_int_impl<unsigned int>(unsigned int n) {
 template<>
 unsigned long long __rand_int_impl<unsigned long long>(unsigned long long n) {
     if (n == 0) {
-        __msg::__fail_msg(__msg::_err, "n must greater than 0.");
+        io::__fail_msg(io::_err, "n must greater than 0.");
     }
     long long ask = 1LL << 32;
     unsigned long long limit = __UNSIGNED_LONG_LONG_MAX / n * n;
@@ -818,7 +818,7 @@ T __rand_int_impl(T from, T to) {
 template<>
 unsigned long long __rand_int_impl<unsigned long long>(unsigned long long from, unsigned long long to) {
     if (from > to) {
-        __msg::__fail_msg(__msg::_err, "range [%llu, %llu] is not valid.", from, to);
+        io::__fail_msg(io::_err, "range [%llu, %llu] is not valid.", from, to);
     }
     if (from == __UNSIGNED_LONG_LONG_MIN && to == __UNSIGNED_LONG_LONG_MAX) {
         unsigned long long result = __rand_int_impl<unsigned long long>(from, to / 2);
@@ -830,7 +830,7 @@ unsigned long long __rand_int_impl<unsigned long long>(unsigned long long from, 
 template<>
 long long __rand_int_impl<long long>(long long from, long long to) {
     if (from > to) {
-        __msg::__fail_msg(__msg::_err, "range [%lld, %lld] is not valid.", from, to);
+        io::__fail_msg(io::_err, "range [%lld, %lld] is not valid.", from, to);
     }
     if ((from < 0 && to < 0) || (from > 0 && to > 0)) {
         return rnd.next(from, to);
@@ -889,7 +889,7 @@ __format_to_int_range(std::string& s) {
     size_t close = s.find_first_of(")]");
     size_t comma = s.find(',');
     if (open == std::string::npos || close == std::string::npos || comma == std::string::npos) {
-        __msg::__fail_msg(__msg::_err, std::format("{} is an invalid format. Example: [1, 10)", s).c_str());
+        io::__fail_msg(io::_err, std::format("{} is an invalid format. Example: [1, 10)", s).c_str());
     }
     T left = __string_to_value<T>(__sub_value_string(s, open, comma));
     T right = __string_to_value<T>(__sub_value_string(s, comma, close));
@@ -921,7 +921,7 @@ T __to_odd_need_limit(T n, bool lower) {
 template <typename T>
 T __rand_odd_impl(T from, T to) {
     if (to < from || (to == from && to % 2 == 0)) {
-        __msg::__fail_msg(__msg::_err, std::format("There is no odd number between [{0}, {1}].", from, to).c_str());
+        io::__fail_msg(io::_err, std::format("There is no odd number between [{0}, {1}].", from, to).c_str());
     }
     T l = __to_odd_need_limit(from, true);
     T r = __to_odd_need_limit(to, false);
@@ -958,7 +958,7 @@ T __to_even_need_limit(T n, bool lower) {
 template <typename T>
 T __rand_even_impl(T from, T to) {
     if (to < from || (to == from && to % 2 != 0)) {
-        __msg::__fail_msg(__msg::_err, std::format("There is no even number between [{0}, {1}].", from, to).c_str());
+        io::__fail_msg(io::_err, std::format("There is no even number between [{0}, {1}].", from, to).c_str());
     }
     T l = __to_even_need_limit(from, true);
     T r = __to_even_need_limit(to, false);
@@ -1001,9 +1001,9 @@ double __change_to_double(T n){
         _n = n;
     } else if (std::is_convertible<T, double>::value){
         _n = static_cast<double>(n);
-        __msg::__warn_msg(__msg::_err, "Input is not a real number, change it to %lf. Please ensure it's correct.", _n);
+        io::__warn_msg(io::_err, "Input is not a real number, change it to %lf. Please ensure it's correct.", _n);
     } else {
-        __msg::__fail_msg(__msg::_err, "Input is not a real number, and can't be changed to it.");
+        io::__fail_msg(io::_err, "Input is not a real number, and can't be changed to it.");
     }
     return _n;
 }
@@ -1067,7 +1067,7 @@ __format_to_double_range(std::string s) {
     size_t close = s.find_first_of(")]");
     size_t comma = s.find(',');
     if(open == std::string::npos || close == std::string::npos || comma == std::string::npos) {
-        __msg::__fail_msg(__msg::_err,"%s is an invalid range.", s.c_str());
+        io::__fail_msg(io::_err,"%s is an invalid range.", s.c_str());
     }
     std::string left_str = __sub_value_string(s, open, comma);
     std::string right_str = __sub_value_string(s, comma, close);
@@ -1150,13 +1150,13 @@ rand_prob(const Con& map) {
         elements.emplace_back(it.first);
         ValueType value = it.second;
         if (value < 0) {
-            __msg::__fail_msg(__msg::_err, "The value of the map must be a non-negative integer.");
+            io::__fail_msg(io::_err, "The value of the map must be a non-negative integer.");
         }
         sum += value;
         probs.emplace_back(sum);
     }
     if (sum == 0) {
-        __msg::__fail_msg(__msg::_err, "The sum of the map must be a positive integer.");
+        io::__fail_msg(io::_err, "The sum of the map must be a positive integer.");
     }
     long long p = rand_int(1LL, sum);
     auto pos = lower_bound(probs.begin(), probs.end(), p) - probs.begin();
@@ -1196,7 +1196,7 @@ char rand_char(const char* format, ...) {
     FMT_TO_RESULT(format, format, _format);
     std::string s = rnd.next(_format);
     if (s.empty()) {
-        __msg::__fail_msg(__msg::_err, "Can't generator a char from an empty string.");
+        io::__fail_msg(io::_err, "Can't generator a char from an empty string.");
     }
     return s.c_str()[0];
 }
@@ -1262,10 +1262,10 @@ std::string rand_string(std::string format) {
  */
 std::string __rand_palindrome_impl(int n, int p, std::string char_type) {
     if (n < 0) {
-        __msg::__fail_msg(__msg::_err, std::format("String length must be a non-negative integer, but found {0}.", n).c_str());
+        io::__fail_msg(io::_err, std::format("String length must be a non-negative integer, but found {0}.", n).c_str());
     }
     if (p < 0 || p > n) {
-        __msg::__fail_msg(__msg::_err, std::format("Palindrome length must be a non-negative integer and less than or equal to the string length, but found {0}.", p).c_str());
+        io::__fail_msg(io::_err, std::format("Palindrome length must be a non-negative integer and less than or equal to the string length, but found {0}.", p).c_str());
     }
     std::string palindrome_part(p, ' ');
     for (int i = 0; i < (p + 1) / 2; i++) {
@@ -1323,13 +1323,13 @@ void __rand_bracket_close(std::string& res, std::string& close, std::stack<int>&
 
 std::string rand_bracket_seq(int len, std::string brackets) {
     if (len < 0 || len % 2) {
-        __msg::__fail_msg(__msg::_err, "Length must be positive even number, but found %d.", len);
+        io::__fail_msg(io::_err, "Length must be positive even number, but found %d.", len);
     }
     std::stack<int> st;
     std::string open = "";
     std::string close = "";
     if (brackets.size() == 0 || brackets.size() % 2) {
-        __msg::__fail_msg(__msg::_err, "Bracket must appear in pairs and the length must be greater than 0.");
+        io::__fail_msg(io::_err, "Bracket must appear in pairs and the length must be greater than 0.");
     }
     for (int i = 0; i < brackets.size(); i++) {
         if (i % 2 == 0) open += brackets[i];
@@ -1471,19 +1471,19 @@ bool __rand_large_sum(std::vector<T> &v, T &sum, T limit) {
 template<typename T>
 std::vector<T> rand_sum(int size, T sum, T from, T to) {
     if (size < 0) {
-        __msg::__fail_msg(__msg::_err, "Size of the vector can't less than zero.");
+        io::__fail_msg(io::_err, "Size of the vector can't less than zero.");
     } else if (size > 10000000) {
-        __msg::__warn_msg(__msg::_err, std::format("Size of the vector is too large: {0}.", size).c_str());
+        io::__warn_msg(io::_err, std::format("Size of the vector is too large: {0}.", size).c_str());
     }
     if (from > to) {
-        __msg::__fail_msg(__msg::_err, std::format("The range [{0}, {1}] is invalid.", from, to).c_str());
+        io::__fail_msg(io::_err, std::format("The range [{0}, {1}] is invalid.", from, to).c_str());
     }
     if (sum < from * size || sum > to * size) {
-        __msg::__fail_msg(__msg::_err, std::format("Sum of the vector is in range [%s,%s], but need sum = %s.", from * size, to * size, sum).c_str());
+        io::__fail_msg(io::_err, std::format("Sum of the vector is in range [%s,%s], but need sum = %s.", from * size, to * size, sum).c_str());
     }
     if (size == 0) {
         if (sum != 0) {
-            __msg::__fail_msg(__msg::_err, "Size of the vector is zero, but sum is not zero.");
+            io::__fail_msg(io::_err, "Size of the vector is zero, but sum is not zero.");
         }
         return std::vector<T>();
     }
@@ -1510,12 +1510,12 @@ std::vector<T> rand_sum(int size, T sum, T from, T to) {
     T result_sum = 0;
     for (int i = 0; i < size; i++) {
         if (v[i] < from || v[i] > to) {
-            __msg::__error_msg(__msg::_err, std::format("The {0}{1} element is out of range [{2}, {3}].", v[i], englishEnding(i + 1), from, to).c_str());
+            io::__error_msg(io::_err, std::format("The {0}{1} element is out of range [{2}, {3}].", v[i], englishEnding(i + 1), from, to).c_str());
         }
         result_sum += v[i];
     }
     if (result_sum != ask_sum) {
-        __msg::__error_msg(__msg::_err, std::format("The sum of the vector is {0}, but need sum = {1}.", result_sum, ask_sum).c_str());
+        io::__error_msg(io::_err, std::format("The sum of the vector is {0}, but need sum = {1}.", result_sum, ask_sum).c_str());
     }
     return v;
 }
@@ -1548,11 +1548,11 @@ std::vector<int> shuffle_index(Iter begin, Iter end, int offset = 0) {
     for (Iter i = begin; i != end; i++) {
         int x = *i;
         if (x < 0) {
-            __msg::__fail_msg(__msg::_err, "Elements must be non negative number.");
+            io::__fail_msg(io::_err, "Elements must be non negative number.");
         }
         tot += x;
         if (tot > 10000000) {
-            __msg::__fail_msg(__msg::_err, "Sum of the elements must equal or less than 10^7");
+            io::__fail_msg(io::_err, "Sum of the elements must equal or less than 10^7");
         }
         while (x--) {
             res.emplace_back((i - begin) + offset);
@@ -1772,7 +1772,7 @@ public:
     void set_is_rooted(bool is_rooted) { 
         if (_is_rooted != is_rooted) {
             _swap_node = is_rooted ? false : true;
-            __msg::__warn_msg(__msg::_err, std::format("Setting `swap_node` to {}, because `is_rooted` changed!", (_swap_node ? "true" : "false")).c_str());
+            io::__warn_msg(io::_err, std::format("Setting `swap_node` to {}, because `is_rooted` changed!", (_swap_node ? "true" : "false")).c_str());
         }
         _is_rooted = is_rooted; 
     }
@@ -1780,7 +1780,7 @@ public:
     void set_root(int root) {
         _root = root - 1;
         if (!_is_rooted) {
-            __msg::__warn_msg(__msg::_err, "Unrooted Tree, set root is useless."); 
+            io::__warn_msg(io::_err, "Unrooted Tree, set root is useless."); 
         }
     }
 
@@ -1808,14 +1808,14 @@ public:
     
     int root() const {
         if (!_is_rooted) {
-            __msg::__warn_msg(__msg::_err, "Unrooted Tree, root is useless.");
+            io::__warn_msg(io::_err, "Unrooted Tree, root is useless.");
         }
         return _node_indices[_root];
     }
     
     int& root_ref() {
         if (!_is_rooted) {
-            __msg::__warn_msg(__msg::_err, "Unrooted Tree, root is useless.");
+            io::__warn_msg(io::_err, "Unrooted Tree, root is useless.");
         }
         return _root;
     }
@@ -1828,8 +1828,8 @@ public:
     
     void set_node_indices(std::vector<int> node_indices) {
         if ((int)node_indices.size() != _node_count) {
-            __msg::__warn_msg(
-                __msg::_err, 
+            io::__warn_msg(
+                io::_err, 
                 "Node indices size must equal to node count %d, but found %d.", 
                 _node_count, 
                 node_indices.size());
@@ -1840,8 +1840,8 @@ public:
     
     void set_node_indices(int index, int number) {
         if (index < 1 || index > _node_count) {
-            __msg::__warn_msg(
-                __msg::_err,
+            io::__warn_msg(
+                io::_err,
                 "Node index must in range [1, %d], but found %d.",
                 _node_count,
                 index);
@@ -1919,7 +1919,7 @@ protected:
     template<typename T = NodeType, _HasT<T> = 0>
     void __check_nodes_weight_function() {
         if (_nodes_weight_function == nullptr) {
-            __msg::__fail_msg(__msg::_err, "Nodes weight generator function is nullptr, please set it.");
+            io::__fail_msg(io::_err, "Nodes weight generator function is nullptr, please set it.");
         }
     }
     
@@ -1929,7 +1929,7 @@ protected:
     template<typename T = EdgeType, _HasT<T> = 0>
     void __check_edges_weight_function() {
         if (_edges_weight_function == nullptr) {
-            __msg::__fail_msg(__msg::_err, "Edges weight generator function is nullptr, please set it.");
+            io::__fail_msg(io::_err, "Edges weight generator function is nullptr, please set it.");
         }
     }
     
@@ -2064,15 +2064,15 @@ public:
 protected:
     void __reroot_set_check(int root) {
         if (!_is_rooted) {
-            __msg::__warn_msg(__msg::_err, "unrooted tree can't re-root.");
+            io::__warn_msg(io::_err, "unrooted tree can't re-root.");
             return;
         }
         if (root < 1 || root > _node_count) {
-            __msg::__warn_msg(__msg::_err, "restriction of the root is [1, %d], but found %d.", _node_count, root);
+            io::__warn_msg(io::_err, "restriction of the root is [1, %d], but found %d.", _node_count, root);
             return;
         }
         if ((int)_edges.size() < _node_count - 1) {
-            __msg::__warn_msg(__msg::_err, "Tree should generate first.");
+            io::__warn_msg(io::_err, "Tree should generate first.");
             return;
         }
         _root = root - 1;
@@ -2128,12 +2128,12 @@ protected:
 
     void __judge_comman_limit() {
         if (_node_count <= 0) {
-            __msg::__fail_msg(__msg::_err, "Number of nodes must be a positive integer, but found %d.", _node_count);
+            io::__fail_msg(io::_err, "Number of nodes must be a positive integer, but found %d.", _node_count);
         }
 
         if (_is_rooted && (_root < 0 || _root >= _node_count)) {
-            __msg::__fail_msg(
-                __msg::_err,
+            io::__fail_msg(
+                io::_err,
                 "restriction of the root is [1, %d], but found %d.", 
                 _node_count, 
                 _root + 1);
@@ -2442,8 +2442,8 @@ protected:
 
     virtual void __judge_self_limit() override{
         if (_height > this->_node_count || (this->_node_count > 1 && _height <= 1) || _height < 1) {
-            __msg::__fail_msg(
-                __msg::_err, 
+            io::__fail_msg(
+                io::_err, 
                 "restriction of the height is [%d,%d].\n", 
                 this->_node_count == 1 ? 1 : 2,
                 this->_node_count);
@@ -2537,15 +2537,15 @@ protected:
 
     virtual void __judge_self_limit() override {
         if (_max_degree > this->_node_count - 1) {
-            __msg::__warn_msg(__msg::_err,
+            io::__warn_msg(io::_err,
                             "The max degree limit %d is greater than node - 1, equivalent to use Tree::gen_pruefer",
                             _max_degree);
         }
         int max_degree_limit = this->_node_count == 1 ? 0 : (this->_node_count == 2 ? 1 : 2);
         
         if (_max_degree < max_degree_limit) {
-            __msg::__fail_msg(
-                __msg::_err,
+            io::__fail_msg(
+                io::_err,
                 "The max degree limit of %s node's tree is greater than or equal to %d, but found %d.",
                 this->_node_count > 2 ? "3 or more" : std::to_string(this->_node_count).c_str(),
                 max_degree_limit,
@@ -2629,8 +2629,8 @@ protected:
 
     virtual void __judge_self_limit() override {
         if (_max_son > this->_node_count - 1) {
-            __msg::__warn_msg(
-                __msg::_err,
+            io::__warn_msg(
+                io::_err,
                 "The max son limit %d is greater than node - 1 (%d), equivalent to use Tree::gen_pruefer",
                 this->_node_count - 1,
                 _max_son);
@@ -2641,8 +2641,8 @@ protected:
             (this->_node_count == 2 ? 1 : 2);
         
         if (_max_son < max_son_limit) {
-            __msg::__fail_msg(
-                __msg::_err,
+            io::__fail_msg(
+                io::_err,
                 "The max son limit of %s node's tree is greater than or equal to %d, but found %d.",
                 this->_node_count > 2 ? "3 or more" : std::to_string(this->_node_count).c_str(),
                 max_son_limit,
@@ -2732,7 +2732,7 @@ public:
     void set_direction(bool direction) { 
         if (_direction != direction) {
             _swap_node = direction ? false : true;
-            __msg::__warn_msg(__msg::_err, "Setting `swap_node` to %s, because `direction` changed!", (_swap_node ? "true" : "false"));
+            io::__warn_msg(io::_err, "Setting `swap_node` to %s, because `direction` changed!", (_swap_node ? "true" : "false"));
         }
         _direction = direction; 
     }
@@ -2774,8 +2774,8 @@ public:
     
     void set_node_indices(std::vector<int> node_indices) {
         if ((int)node_indices.size() != _node_count) {
-            __msg::__warn_msg(
-                __msg::_err, 
+            io::__warn_msg(
+                io::_err, 
                 "Node indices size must equal to node count %d, but found %d.", 
                 _node_count, 
                 node_indices.size());
@@ -2786,8 +2786,8 @@ public:
     
     void set_node_indices(int index, int number) {
         if (index < 1 || index > _node_count) {
-            __msg::__warn_msg(
-                __msg::_err,
+            io::__warn_msg(
+                io::_err,
                 "Node index must in range [1, %d], but found %d.",
                 _node_count,
                 index);
@@ -2929,21 +2929,21 @@ protected:
                 limit += _node_count;
             }
             if (_edge_count > limit) {
-                __msg::__fail_msg(__msg::_err, "number of edges must less than or equal to %lld.", limit);
+                io::__fail_msg(io::_err, "number of edges must less than or equal to %lld.", limit);
             }
         } else {
             if (_node_count == 1 && !_self_loop && _edge_count > 0) {
-                __msg::__fail_msg(__msg::_err, "number of edges must equal to 0.");
+                io::__fail_msg(io::_err, "number of edges must equal to 0.");
             }
         }
     }
 
     virtual void __judge_lower_limit() {
         if (_edge_count < 0) {
-            __msg::__fail_msg(__msg::_err, "number of edges must be a non-negative integer.");
+            io::__fail_msg(io::_err, "number of edges must be a non-negative integer.");
         }
         if (_connect && _edge_count < _node_count - 1) {
-            __msg::__fail_msg(__msg::_err, "number of edges must greater than or equal to %d.", _node_count - 1);
+            io::__fail_msg(io::_err, "number of edges must greater than or equal to %d.", _node_count - 1);
         }
     }
 
@@ -3250,8 +3250,8 @@ public :
 
     void set_left_right(int left, int right) {
         if (left + right < 0) {
-            __msg::__fail_msg(
-                    __msg::_err,
+            io::__fail_msg(
+                    io::_err,
                     "number of left part nodes add right part nodes must greater than 0."
                     "But found %d + %d = %d",
                     left, right, left + right);
@@ -3335,8 +3335,8 @@ protected:
         int l = 0, r = node / 2, limit;
         if (!this->_multiply_edge) {
             if (edge > r * (node - r)) {
-                __msg::__fail_msg(
-                        __msg::_err,
+                io::__fail_msg(
+                        io::_err,
                         "number of edges must less than or equal to %d.",
                         r * (node - r));
             }
@@ -3389,10 +3389,10 @@ protected:
 
     virtual void __judge_self_limit() override {
         if (_left < 0) {
-            __msg::__fail_msg(__msg::_err, "Left part size must greater than or equal to 0, but found %d",_left);
+            io::__fail_msg(io::_err, "Left part size must greater than or equal to 0, but found %d",_left);
         }
         if (_right < 0) {
-            __msg::__fail_msg(__msg::_err, "Left part size must greater than or equal to 0, but found %d",_right);
+            io::__fail_msg(io::_err, "Left part size must greater than or equal to 0, but found %d",_right);
         }
     }
 
@@ -3400,13 +3400,13 @@ protected:
         if (!this->_multiply_edge) {
             long long limit = (long long)_left * (long long)_right;
             if (limit < this->_edge_count) {
-                __msg::__fail_msg(
-                    __msg::_err, "number of edges must less than or equal to %lld, but found %d.",
+                io::__fail_msg(
+                    io::_err, "number of edges must less than or equal to %lld, but found %d.",
                     limit, this->_edge_count);
             }
         } else {
             if (this->_node_count == 1 && this->_edge_count > 0) {
-                __msg::__fail_msg(__msg::_err, "number of edges must less than or equal to 0, but found %d.", this->_edge_count);
+                io::__fail_msg(io::_err, "number of edges must less than or equal to 0, but found %d.", this->_edge_count);
             }
         }
     }
@@ -3608,7 +3608,7 @@ protected:
 
     virtual void __judge_lower_limit() override {
         if (this->_node_count < 3) {
-            __msg::__fail_msg(__msg::_err, "number of nodes must greater than or equal to 3, but found %d.", this->_node_count);
+            io::__fail_msg(io::_err, "number of nodes must greater than or equal to 3, but found %d.", this->_node_count);
         }
     }
 
@@ -3689,7 +3689,7 @@ protected:
 
     virtual void __judge_lower_limit() override {
         if (this->_node_count < 4) {
-            __msg::__fail_msg(__msg::_err, "number of nodes must greater than or equal to 4, but found %d.", this->_node_count);
+            io::__fail_msg(io::_err, "number of nodes must greater than or equal to 4, but found %d.", this->_node_count);
         }
     }
 
@@ -3782,11 +3782,11 @@ public:
     void set_row_column(int row, int column, int ignore = 0) {
         long long node = (long long)row * (long long)column - (long long)ignore;
         if (ignore >= column) {
-            __msg::__warn_msg(__msg::_err, "The ignored nodes is large than or equal to column number, will invalidate it.");
+            io::__warn_msg(io::_err, "The ignored nodes is large than or equal to column number, will invalidate it.");
         }
         if (node > 100000000) {
-            __msg::__warn_msg(
-                __msg::_err, 
+            io::__warn_msg(
+                io::_err, 
                 "The number of nodes is %d * %d - %d = %lld, even greater than 10^8.",
                 row,
                 column,
@@ -3829,8 +3829,8 @@ protected:
                 limit *= 2;
             }
             if (this->_edge_count > limit) {
-                __msg::__warn_msg(
-                    __msg::_err, 
+                io::__warn_msg(
+                    io::_err, 
                     "Number of edges count is %d, which is large than the maximum possible, use upper edges limit %d.",
                     this->_edge_count,
                     limit);
@@ -3839,17 +3839,17 @@ protected:
         }
         else {
             if (this->_node_count == 1 && this->_edge_count == 0) {
-                __msg::__fail_msg(__msg::_err, "Number of edges count must equal to 0.");
+                io::__fail_msg(io::_err, "Number of edges count must equal to 0.");
             }
         }
     }
 
     virtual void __judge_self_limit() override{
         if (_row <= 0) {
-            __msg::__fail_msg(__msg::_err, "Number of rows must greater than 0, but found %d.", _row);
+            io::__fail_msg(io::_err, "Number of rows must greater than 0, but found %d.", _row);
         }
         if (_column <= 0) {
-            __msg::__fail_msg(__msg::_err, "Number of columns must greater than 0, but found %d.", _column);
+            io::__fail_msg(io::_err, "Number of columns must greater than 0, but found %d.", _column);
         }
     }
 
@@ -3872,8 +3872,8 @@ protected:
             }
             if (possible.size() == 0) {
                 this->_edge_count = max.first;
-                __msg::__warn_msg(
-                    __msg::_err,
+                io::__warn_msg(
+                    io::_err,
                     "number of edges is large than the maximum possible, use upper edges limit %d.",
                     this->_edge_count);
                 _row = max.second;
@@ -4005,13 +4005,13 @@ protected :
 
     virtual void __judge_self_limit() override {
         if (_cycle < 3 || _cycle > this->_node_count) {
-            __msg::__fail_msg(__msg::_err, "cycle size must in range [3, %d], but found %d.", this->_node_count, _cycle);
+            io::__fail_msg(io::_err, "cycle size must in range [3, %d], but found %d.", this->_node_count, _cycle);
         }
     }
 
     virtual void __judge_lower_limit() override {
         if (this->_node_count < 3) {
-            __msg::__fail_msg(__msg::_err, "number of nodes in cycle graph must greater than or equal to 3, but found %d.", this->_node_count);
+            io::__fail_msg(io::_err, "number of nodes in cycle graph must greater than or equal to 3, but found %d.", this->_node_count);
         }
     }
 
@@ -4299,8 +4299,8 @@ protected:
     virtual void __judge_upper_limit() override {
         int limit = this->_node_count - 1 + (this->_node_count - 1) / 2;
         if (this->_edge_count > limit) {
-            __msg::__fail_msg(
-                __msg::_err, 
+            io::__fail_msg(
+                io::_err, 
                 "number of edges must less than or equal to %d, but found %d.",
                 limit, 
                 this->_edge_count);
@@ -4487,13 +4487,13 @@ private:
         int node_count = source._node_count;
         _node_count[index] = node_count;
         if ((int)source._nodes_weight.size() != node_count && source._nodes_weight_function != nullptr) {
-            __msg::__warn_msg(__msg::_err, "Found node weights size is not equal to node count, re-generate it.");
+            io::__warn_msg(io::_err, "Found node weights size is not equal to node count, re-generate it.");
             source.__check_nodes_weight_function();
             source.__generate_nodes_weight();
         }
         _nodes_weight[index] = source._nodes_weight;
         if ((int)source._node_indices.size() != node_count) {
-            __msg::__warn_msg(__msg::_err, "Found node indices size is not equal to node count, re-init it.");
+            io::__warn_msg(io::_err, "Found node indices size is not equal to node count, re-init it.");
             source.__init_node_indices();
         }
         _node_indices[index] = source._node_indices;           
@@ -4598,7 +4598,7 @@ private:
             }
         }
         if (ignore_edges) {
-            __msg::__warn_msg(__msg::_err, "Ignore %d edge(s) due to the graph's attribute-based conditions.", ignore_edges);
+            io::__warn_msg(io::_err, "Ignore %d edge(s) due to the graph's attribute-based conditions.", ignore_edges);
         }
     }
     
@@ -4634,8 +4634,8 @@ private:
         if (_result._connect) {
             int need_edge_count = _connect_parts.size() - 1;
             if (_extra_edge_count < need_edge_count) {
-                __msg::__fail_msg(
-                    __msg::_err, 
+                io::__fail_msg(
+                    io::_err, 
                     "At least %d edges are needed to connect %d connected components, but found %d.",
                     need_edge_count,
                     _connect_parts.size(),
@@ -4875,10 +4875,10 @@ protected:
     
     virtual void __judge_self_limit() override {
         if (_flower_size < 0) {
-            __msg::__fail_msg(__msg::_err, "Flower size must greater than or equal to 0, but found %d.", _flower_size);
+            io::__fail_msg(io::_err, "Flower size must greater than or equal to 0, but found %d.", _flower_size);
         }
         if (_chain_size < 0) {
-            __msg::__fail_msg(__msg::_err, "Chain size must greater than or equal to 0, but found %d.", _chain_size);
+            io::__fail_msg(io::_err, "Chain size must greater than or equal to 0, but found %d.", _chain_size);
         }
     }
     
@@ -4978,7 +4978,7 @@ public:
         if (tree_size > 0) {
             _trees_size.emplace_back(tree_size);
         } else {
-            __msg::__warn_msg(__msg::_err, "Tree size must greater than 0, but found %d.", tree_size);
+            io::__warn_msg(io::_err, "Tree size must greater than 0, but found %d.", tree_size);
         }
     }
     void set_trees_size(std::vector<int> trees_size) {
@@ -4997,7 +4997,7 @@ public:
 protected:
     virtual void __judge_upper_limit() override {
         if (this->_edge_count > this->_node_count - 1) {
-            __msg::__fail_msg(__msg::_err, "number of edges must less than %d.", this->_node_count - 1);
+            io::__fail_msg(io::_err, "number of edges must less than %d.", this->_node_count - 1);
         }
     }
     
@@ -5014,16 +5014,16 @@ protected:
             count += tree_size;
         }
         if (count != this->_node_count) {
-            __msg::__info_msg(
-                __msg::_err, 
+            io::__info_msg(
+                io::_err, 
                 "Node count will be changed because the sum of Trees' size %d is not equal to node count %d.",
                 count,
                 this->_node_count);
             this->set_node_count(count);
         }
         if (count - (int)_trees_size.size() != this->_edge_count) {
-            __msg::__info_msg(
-                __msg::_err, 
+            io::__info_msg(
+                io::_err, 
                 "Edge count will be changed because the sum of Trees' edges %d is not equal to edge count %d.",
                 count - _trees_size.size(),
                 this->_edge_count);
@@ -5559,7 +5559,7 @@ std::pair<std::string, std::string> __format_xy_range(std::string format) {
     std::string x_range = find_range("xX");
     std::string y_range = find_range("yY");
     if (x_range.empty() && y_range.empty()) {
-        __msg::__fail_msg(__msg::_err, "%s is not a valid range.", format.c_str());
+        io::__fail_msg(io::_err, "%s is not a valid range.", format.c_str());
     }
     if (x_range.empty()) x_range = y_range;
     if (y_range.empty()) y_range = x_range;
@@ -5649,11 +5649,11 @@ protected:
     
     void __check_range_limit() {
         if (this->_x_left_limit > this->_x_right_limit) {
-            __msg::__fail_msg(__msg::_err, "range [%s, %s] for x-coordinate is invalid.", 
+            io::__fail_msg(io::_err, "range [%s, %s] for x-coordinate is invalid.", 
                 std::to_string(this->_x_left_limit).c_str(), std::to_string(this->_x_right_limit).c_str());
         }
         if (this->_y_left_limit > this->_y_right_limit) {
-            __msg::__fail_msg(__msg::_err, "range [%s, %s] for y-coordinate is invalid.", 
+            io::__fail_msg(io::_err, "range [%s, %s] for y-coordinate is invalid.", 
                 std::to_string(this->_y_left_limit).c_str(), std::to_string(this->_y_right_limit).c_str());
         }
     }
@@ -5741,7 +5741,7 @@ public:
     T& operator[](int idx) { return idx == 0 ? _x : _y; }
     T& operator[](char c) { return c=='x' || c=='X' ? _x : _y; }
     T& operator[](std::string s) {
-        if(s.empty()) __msg::__fail_msg(__msg::_err,"Index s is an empty string.");
+        if(s.empty()) io::__fail_msg(io::_err,"Index s is an empty string.");
         return this->operator[](s[0]);
     }
     bool operator==(const Point<T>& p) const{ return this->_x == p._x && this->_y == p._y; }
@@ -5869,7 +5869,7 @@ protected:
     void __check_count_limit() {
         if (this->_x_left_limit == this->_x_right_limit && 
             this->_y_left_limit == this->_y_right_limit) {
-                __msg::__fail_msg(__msg::_err, "Number of points in space must greater than one.");
+                io::__fail_msg(io::_err, "Number of points in space must greater than one.");
             }
     }          
     
@@ -6006,7 +6006,7 @@ public:
             if (success) break;
         }
         if (!success) {
-            __msg::__fail_msg(__msg::_err, "Tried %d times, found no convex hull satisfied the condition.", _max_try);
+            io::__fail_msg(io::_err, "Tried %d times, found no convex hull satisfied the condition.", _max_try);
         }
     }
     _OTHER_OUTPUT_FUNCTION_SETTING(_Self)
@@ -6018,13 +6018,13 @@ protected:
     
     void __check_node_count() {
         if (_node_count <= 0) {
-            __msg::__fail_msg(__msg::_err, "At least one point.");
+            io::__fail_msg(io::_err, "At least one point.");
         }
     }
     
     void __check_max_try() {
         if (_max_try <= 0) {
-            __msg::__fail_msg(__msg::_err, "At least try once.");
+            io::__fail_msg(io::_err, "At least try once.");
         }
     }
     

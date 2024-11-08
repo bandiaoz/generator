@@ -457,8 +457,41 @@ void forest_constructor_test() {
 }
 }
 
+namespace rand_geometry_test {
+/**
+ * @brief 生成随机点测试
+ */
+void point_test() {
+    Point<int> p1;
+    p1.rand(1, 2, 3, 4); // 生成一个坐标在 x ∈ [1, 2], y ∈ [3, 4] 的点
+    Point<int> p2;
+    p2.rand("[-1,1]"); // 生成一个坐标在 x,y ∈ [-1, 1] 的点
+    Point<double> p3;
+    p3.rand("y[-1, 0] x(0, 1]"); // 生成一个坐标在 x ∈ (0, 1], y ∈ [-1, 0] 的点
+    println(p1, p2, p3);
+
+    Point<int> p4 = rand_point<int>(1, 2, 3, 4); // 生成一个坐标在 x ∈ [1, 2], y ∈ [3, 4] 的点
+    Point<int> p5 = rand_point<int>("[-1,1]"); // 生成一个坐标在 x,y ∈ [-1, 1] 的点
+    Point<double> p6 = rand_point<double>("y[-1, 0] x(0, 1]"); // 生成一个坐标在 x ∈ (0, 1], y ∈ [-1, 0] 的点
+    Point<int> p7 = rand_point<int>(-1, 1); // 生成一个坐标在 x,y ∈ [-1, 1] 的点
+}
+
+/**
+ * @brief 生成随机凸包测试
+ */
+void convexHull_test() {
+    ConvexHull<int> c(10);
+    c.set_xy_limit("[-20, 20]"); // 设置点的坐标范围
+    c.gen();
+    println(c);
+}
+}
+
 int main() {
     init_gen();
+    
+    rand_geometry_test::point_test();
+    rand_geometry_test::convexHull_test();
 
     return 0;
 }

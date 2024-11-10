@@ -2,17 +2,15 @@ import os
 import sys
 
 def compile_cpp(
-    file_name,
+    file_path,
     path="/Users/chenjinglong/algorithm_competition/nowcoder/generator",
 ):
     """
     编译 cpp 文件，获得同名可执行文件；例如 std.cpp -> std, checker.cc -> checker
     """
-    if not os.path.exists(file_name):
-        return
-    prefix = file_name.split(".")[0]
+    prefix = ".".join(file_path.split(".")[:-1])
     os.system(
-        f"g++-14 ./{file_name} \
+        f"g++-14 {file_path} \
         -o {prefix} -O2 -std=c++20 \
         -Wl,-stack_size -Wl,0x10000000\
         -I{path}"
@@ -20,15 +18,17 @@ def compile_cpp(
 
 cpp_files_prefix = []
 def compile_all_cpp(exclude=[]):
-    for file_name in os.listdir("."):
-        if file_name in exclude:
-            continue
-        if file_name.endswith(".cpp"):
-            cpp_files_prefix.append(file_name[:-4])
-            compile_cpp(file_name)
-        elif file_name.endswith(".cc"):
-            cpp_files_prefix.append(file_name[:-3])
-            compile_cpp(file_name)
+    for root, dirs, files in os.walk("."):
+        for file in files:
+            if file in exclude:
+                continue
+            file_path = os.path.join(root, file)
+            if file.endswith(".cpp"):
+                cpp_files_prefix.append(".".join(file_path.split(".")[:-1]))
+                compile_cpp(file_path)
+            elif file.endswith(".cc"):
+                cpp_files_prefix.append(".".join(file_path.split(".")[:-1]))
+                compile_cpp(file_path)
     
 
 def remove(file_names):

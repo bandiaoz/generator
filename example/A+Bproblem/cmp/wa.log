@@ -1,0 +1,63 @@
+Testcase 1 : AC, Runtime = 315ms.
+Testcase 2 : WA, Runtime = 12ms.
+checker return: wrong answer expected 3, found 4! 
+Testcase 3 : AC, Runtime = 12ms.
+Testcase 4 : WA, Runtime = 12ms.
+checker return: wrong answer expected 4, found 5! 
+Testcase 5 : AC, Runtime = 12ms.
+Testcase 6 : AC, Runtime = 11ms.
+Testcase 7 : AC, Runtime = 11ms.
+Testcase 8 : AC, Runtime = 12ms.
+Testcase 9 : WA, Runtime = 11ms.
+checker return: wrong answer expected 99, found 100! 
+Testcase 10 : AC, Runtime = 12ms.
+Testcase 11 : WA, Runtime = 12ms.
+checker return: wrong answer expected 166, found 167! 
+Testcase 12 : WA, Runtime = 12ms.
+checker return: wrong answer expected 73, found 74! 
+Testcase 13 : WA, Runtime = 12ms.
+checker return: wrong answer expected 34, found 35! 
+Testcase 14 : AC, Runtime = 11ms.
+Testcase 15 : AC, Runtime = 12ms.
+Testcase 16 : AC, Runtime = 12ms.
+Testcase 17 : WA, Runtime = 10ms.
+checker return: wrong answer expected 85, found 86! 
+Testcase 18 : WA, Runtime = 12ms.
+checker return: wrong answer expected 108, found 109! 
+Testcase 19 : WA, Runtime = 12ms.
+checker return: wrong answer expected 84, found 85! 
+Testcase 20 : AC, Runtime = 12ms.
+Testcase 21 : AC, Runtime = 10ms.
+Testcase 22 : WA, Runtime = 11ms.
+checker return: wrong answer expected 101, found 102! 
+Testcase 23 : WA, Runtime = 10ms.
+checker return: wrong answer expected 123, found 124! 
+Testcase 24 : WA, Runtime = 12ms.
+checker return: wrong answer expected 111, found 112! 
+Testcase 25 : WA, Runtime = 12ms.
+checker return: wrong answer expected 75, found 76! 
+Testcase 26 : WA, Runtime = 12ms.
+checker return: wrong answer expected 62, found 63! 
+Testcase 27 : AC, Runtime = 12ms.
+Testcase 28 : WA, Runtime = 12ms.
+checker return: wrong answer expected 101, found 102! 
+Testcase 29 : AC, Runtime = 12ms.
+Testcase 30 : AC, Runtime = 12ms.
+Testcase 31 : WA, Runtime = 10ms.
+checker return: wrong answer expected 141, found 142! 
+Testcase 32 : WA, Runtime = 11ms.
+checker return: wrong answer expected 95, found 96! 
+Testcase 33 : WA, Runtime = 12ms.
+checker return: wrong answer expected 69, found 70! 
+Testcase 34 : WA, Runtime = 11ms.
+checker return: wrong answer expected 145, found 146! 
+Testcase 35 : AC, Runtime = 12ms.
+Testcase 36 : WA, Runtime = 12ms.
+checker return: wrong answer expected 46, found 47! 
+Total results :
+AC : 16 / 36
+WA : 20 / 36
+TLE : 0 / 36
+TLE(AC) : 0 / 36
+TLE(WA) : 0 / 36
+ERROR : 0 / 36

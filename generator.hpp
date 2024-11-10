@@ -1,9 +1,31 @@
 #pragma once
 #include "testlib.h"
-#include "settings.hpp"
-
-#include <bits/stdc++.h>
+#include <sstream>
+#include <unordered_map>
+#include <thread>
+#include <chrono>
 #include <sys/stat.h>
+#include <queue>
+#include <stack>
+#include <numeric>
+#include <filesystem>
+
+#ifdef _WIN32
+#include <direct.h>
+#include <windows.h>
+#define mkdir(dir, mode) _mkdir(dir)
+#else
+#include <unistd.h>
+#include <limits.h>
+#include <dirent.h> 
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <signal.h>
+#endif
 
 namespace generator {
 
@@ -86,7 +108,7 @@ std::string color(const char *text, Color color) {
     } else if (color == Yellow) {
         return std::format("\033[1;33m{0}\033[0m", text);
     } 
-    assert(false);
+    return text;
 }
 template <typename... Args>
 void __fail_msg(OutStream& out, const char* msg, Args... args) {
@@ -118,6 +140,64 @@ void __error_msg(OutStream& out, const char* msg, Args... args) {
     exit(EXIT_FAILURE);
 }
 
+std::string __color_ac(bool is_color = true) {
+    return color("AC", is_color ? Green : None);
+}
+std::string __color_wa(bool is_color = true) {
+    return color("WA", is_color ? Red : None);
+}
+std::string __color_tle(bool is_color = true) {
+    return color("TLE", is_color ? Yellow : None);
+}
+std::string __color_tle_ac(bool is_color = true) {
+    return __color_tle(is_color) + "(" + __color_ac(is_color) + ")";
+}
+std::string __color_tle_wa(bool is_color = true) {
+    return __color_tle(is_color) + "(" + __color_wa(is_color) + ")";
+}
+std::string __color_run_err(bool is_color = true) {
+    return color("ERROR", is_color ? Yellow : None);
+}
+void __ac_msg(OutStream& out, bool is_color, int case_id, int runtime) {
+    out.println(
+        "Testcase %d : %s, Runtime = %dms.", 
+        case_id, __color_ac(is_color).c_str(), runtime
+    );
+}
+void __wa_msg(OutStream& out, bool is_color, int case_id, int runtime, std::string &result) {
+    out.println(
+        "Testcase %d : %s, Runtime = %dms.", 
+        case_id, __color_wa(is_color).c_str(), runtime
+    );
+    out.printf("%s", color("checker return: ", is_color ? Red : None).c_str());
+    out.println("%s", result.c_str());
+}
+void __tle_ac_msg(OutStream& out, bool is_color, int case_id, int runtime) {
+    out.println(
+        "Testcase %d : %s, Runtime = %dms.", 
+        case_id, __color_tle_ac(is_color).c_str(), runtime
+    );
+}
+void __tle_wa_msg(OutStream& out, bool is_color, int case_id, int runtime, std::string &result) {
+    out.println(
+        "Testcase %d : %s, Runtime = %dms.", 
+        case_id, __color_tle_wa(is_color).c_str(), runtime
+    );
+    out.printf("%s", color("checker return: ", is_color ? Red : None).c_str());
+    out.println("%s", result.c_str());
+}
+void __tle_msg(OutStream& out, bool is_color, int case_id, int runtime) {
+    out.println(
+        "Testcase %d : %s, Runtime = %dms (killed).",
+        case_id, __color_tle(is_color).c_str(), runtime
+    );
+}
+void __run_err_msg(OutStream& out, bool is_color, int case_id) {
+    out.println(
+        "Testcase %d: %s, meet some error, please check it or report.", 
+        case_id, __color_run_err(is_color).c_str()
+    );
+}
 #ifdef WIN32
     char _path_split = '\\';
     char _other_split = '/';
@@ -134,7 +214,7 @@ public:
     Path() : _path("") {}
     Path(const std::string &s) : _path(s) {}
     Path(const char *s) : _path(std::string(s)) {}
-    Path(Path &other) : _path(other.path()) {}
+    Path(const Path &other) : _path(other.path()) {}
     Path(Path&& other) noexcept : _path(std::move(other._path)) {}
     Path(std::string&& s) noexcept : _path(std::move(s)) {}
     Path& operator=(Path&& other) noexcept {
@@ -217,7 +297,7 @@ public:
             io::__fail_msg(io::_err, std::format("can't find full path :{0}.", _path).c_str());
         }
     #else
-        char buffer[1024];
+        char buffer[PATH_MAX];
         if (realpath(_path.c_str(), buffer) == nullptr) {
             io::__fail_msg(io::_err, std::format("can't find full path :{0}.", _path).c_str());
         }
@@ -229,8 +309,9 @@ public:
             std::remove(_path.c_str());
         }
     }
+private:
     template <typename T>
-    Path __join_helper(const T &arg) const {
+    Path join_helper(const T &arg) const {
         std::string new_path = _path;
     #ifdef _WIN32
         if (!new_path.empty() && new_path.back() != _path_split)  {
@@ -243,10 +324,128 @@ public:
     #endif
         return Path(new_path + arg);
     }
+public:
+    Path join() const {
+        return *this;
+    }
+    template <typename T, typename... Args>
+    typename std::enable_if<!IsPath<T>::value, Path>::type
+    join(const T &arg, const Args &... args) const {
+        return join_helper(arg).join(args...);
+    }
+    template <typename T, typename... Args>
+    typename std::enable_if<IsPath<T>::value, Path>::type
+    join(const T &arg, const Args &... args) const {
+        return join_helper(arg.path()).join(args...);
+    }
 };
 
+template<typename U>
+struct IsPath {
+    template <typename V>
+    static constexpr auto check(V *)
+    -> decltype(std::declval<V>().path(), std::true_type());
+
+    template <typename V>
+    static constexpr std::false_type check(...);
+
+    static constexpr bool value = decltype(check<U>(nullptr))::value;
+};
+template<typename T>
+struct IsPathConstructible {
+    static constexpr bool value = std::is_convertible<T, std::string>::value || IsPath<T>::value;
+};
+template<typename T>
+struct IsProgram {
+    static constexpr bool value = IsPathConstructible<T>::value || std::is_same<T, std::function<void()>>::value;
+};
 OutStream::OutStream(Path& path) {
     open(path.path());
+}
+template <typename T, typename... Args>
+typename std::enable_if<IsPathConstructible<T>::value, Path>::type
+__path_join(const T path, const Args &... args) {
+    return Path(path).join(args...);
+}
+Path __lib_path() {
+    return Path(__FILE__);
+}
+Path __current_path() {
+#ifdef _WIN32
+    char buffer[MAX_PATH];
+    GetModuleFileName(NULL, buffer, MAX_PATH);
+#elif defined(__APPLE__)
+    char buffer[PATH_MAX];
+    uint32_t size = sizeof(buffer);
+    _NSGetExecutablePath(buffer, &size);
+#else
+    char buffer[PATH_MAX];
+    ssize_t length = readlink("/proc/self/exe", buffer, sizeof(buffer));
+    if (length != -1) {
+        buffer[length] = '\0';
+    }
+#endif
+    Path executable_path(buffer);
+    return executable_path.__folder_path();
+}
+template <typename T>
+typename std::enable_if<IsPathConstructible<T>::value, Path>::type
+__full_path(T p) {
+    Path path(p);
+    path.full();
+    return path;
+}
+bool __create_directory(Path& path) {
+    if (path.__directory_exists())  return true;
+    return mkdir(path.cname(), 0777) == 0;
+}
+void __create_directories(Path& path) {
+    path.__unify_split();
+    std::istringstream ss(path.path());
+    std::string token;
+    Path current_path("");
+    while (std::getline(ss, token, _path_split)) {
+        current_path = __path_join(current_path, token);
+    #ifdef _WIN32
+        if (current_path.path().find_first_of(_path_split) == std::string::npos && current_path.path().back() == ':') {
+            continue;
+        }
+    #else
+        if (current_path.path().size() == 1 && current_path.path()[0] == _path_split) {
+            continue;
+        }
+    #endif
+        if (!__create_directory(current_path)) {
+            io::__fail_msg(io::_err, "Error in creating folder : %s.",current_path.cname());
+        }
+    }
+}
+
+enum End{
+    In,
+    Out,
+    Ans,
+    Log,
+    Logc,
+    Exe,
+    MaxEnd  
+};
+std::string _file_end[MaxEnd] = {
+    ".in",
+    ".out",
+    ".ans",
+    ".log",
+    ".logc",
+    ".exe"
+};
+std::string __end_with(int x, End end) {
+    return std::to_string(x) + _file_end[end];
+}
+std::string __end_with(const char* text, End end) {
+    return std::string(text) + _file_end[end];
+}
+std::string __end_with(std::string text, End end) {
+    return text + _file_end[end];
 }
 }
 
@@ -382,7 +581,11 @@ std::vector<int> __get_inputs() {
  * @brief 判断 x.in 输入文件是否存在
  */
 bool __input_file_exists(int x) {
-    io::Path file_path = io::Path(std::to_string(x) + ".in");
+    Path file_path = __path_join(__current_path(), __end_with(x, In));
+    return file_path.__file_exists();
+}
+bool __output_file_exists(int x) {
+    Path file_path = __path_join(__current_path(), __end_with(x, Out));
     return file_path.__file_exists();
 }
 /**
@@ -578,10 +781,36 @@ void show_output_first_line(int LENGTH = 20) {
         }
     }
 }
+/**
+ * @brief 将 folder 文件夹下的 in 文件添加到测试数据中
+ */
+void copy_input(std::string folder) {
+    if (!io::Path(folder).__directory_exists()) {
+        __warn_msg(_err, "Folder %s doesn't exist.", folder.c_str());
+        return;
+    }
+    std::filesystem::path folder_path(folder);
+    for (const auto& entry : std::filesystem::directory_iterator(folder_path)) {
+        if (entry.path().extension() == ".in") {
+            std::string new_filename = __end_with(std::to_string(get_next_input()), In);
+            std::filesystem::copy_file(entry.path(), new_filename);
+        }
+    }
+}
 }
 
 namespace checker {
-using io::Path;
+using namespace io;
+enum ResultState{
+    R_UNKNOWN,
+    R_AC,
+    R_WA,
+    R_TLE,
+    R_TLEANDAC,
+    R_TLEANDWA,
+    R_ERROR,
+    R_Max
+};
 enum Checker {
     mycmp, // 自定义 checker
     lcmp,
@@ -603,59 +832,408 @@ std::string checker_name[MaxChecker] = {
     "rcmp9",
     "wcmp"
 };
+/**
+ * @brief 找到当前文件夹下的 checker 文件，如果不存在则返回默认的 checker 文件
+ * @param checker 
+ * @return 
+ */
+Path __get_default_checker_file(Checker checker) {
+#ifdef _WIN32
+    Path checker_path(__path_join(__current_path(), "checker.exe"));
+#else
+    Path checker_path(__path_join(__current_path(), "checker"));
+#endif
+    if (!checker_path.__file_exists()) {
+        Path folder_path(__full_path(__path_join(__lib_path().__folder_path(), "checker")));
+    #ifdef _WIN32
+        checker_path.change(__path_join(folder_path, "windows",  __end_with(checker_name[checker], Exe)));
+    #else
+        checker_path.change(__path_join(folder_path, "mac", checker_name[checker]));
+    #endif
+    }
+    return checker_path;
+}
+std::vector<Path> __get_compare_files() {
+    return std::vector<Path>();
+}
+template<typename T, typename... Args>
+std::vector<Path> __get_compare_files(T first, Args... args) {
+    std::vector<Path> result;
+    Path first_path(first);
+    first_path.full();
+    if (!first_path.__file_exists()) {
+        __warn_msg(_err, "Compare program file %s doesn't exits.", first_path.cname());
+    } else {
+        result.emplace_back(first_path);
+    }
+    std::vector<Path> rest = __get_compare_files(args...);
+    for (auto &path : rest) {
+        result.emplace_back(path);
+    }
+    // result.insert(result.end(), rest.begin(), rest.end());
+    return result;
+}
+/**
+ * @brief 终止进程
+ */
+void __terminate_process(void* process) {
+#ifdef _WIN32
+    TerminateProcess(reinterpret_cast<HANDLE>(process), 0);
+    CloseHandle(reinterpret_cast<HANDLE>(process));
+#else
+    pid_t pid = static_cast<pid_t>(reinterpret_cast<long long>(process));
+    kill(pid, SIGTERM);
+#endif
+}
+
+const int time_limit_inf = -1;
+void __run_program_with_limit(Path& program, Path& input_file, Path& output_file, int time_limit, int& runtime) {
+    auto start_time = std::chrono::steady_clock::now();
+#ifdef _WIN32
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof(sa);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle = TRUE;       
+    
+    HANDLE hInFile = CreateFileA(input_file.cname(),
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        &sa,
+        OPEN_EXISTING ,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL );
+    
+    HANDLE hOutFile = CreateFileA(output_file.cname(),
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_WRITE | FILE_SHARE_READ,
+        &sa,
+        CREATE_ALWAYS ,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL );
+
+    PROCESS_INFORMATION pi; 
+    STARTUPINFOA si;
+    BOOL ret = FALSE; 
+    DWORD flags = CREATE_NO_WINDOW;
+
+    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
+    ZeroMemory(&si, sizeof(STARTUPINFOA));
+    si.cb = sizeof(STARTUPINFOA); 
+    // si.dwFlags |= STARTF_USESTDHANDLES;
+    si.hStdInput = hInFile;
+    si.hStdError = NULL;
+    si.hStdOutput = hOutFile;
+    char *c_program = const_cast<char *>(program.cname());
+    ret = CreateProcessA(
+            NULL,
+            c_program,
+            NULL,
+            NULL,
+            TRUE,
+            flags,
+            NULL,
+            NULL,
+            &si,
+            &pi);
+    if (ret) 
+    {
+        if (time_limit == time_limit_inf) {
+            WaitForSingleObject(pi.hProcess, INFINITE);
+        } 
+        else if (WaitForSingleObject(pi.hProcess, time_limit) == WAIT_TIMEOUT) {
+            __terminate_process(pi.hProcess);
+        };
+        auto end_time = std::chrono::steady_clock::now();
+        runtime = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    }
+    else {
+        runtime = -1; 
+    }   
+#else
+    if (pid_t pid = fork(); pid == 0) {
+        int input = open(input_file.cname(), O_RDONLY);
+        if (input == -1) {
+            __error_msg(_err, "Fail to open input file %s.", input_file.cname());
+        }
+
+        int output = open(output_file.cname(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        if (output == -1) {
+            close(input);
+            __error_msg(_err, "Fail to open output file %s.", output_file.cname());
+        }
+
+        dup2(input, STDIN_FILENO);
+        dup2(output, STDOUT_FILENO);
+
+        close(input);
+        close(output);
+
+        execl(program.cname(), program.cname(), nullptr);
+        
+        __warn_msg(_err, "Fail to run program %s", program.cname());
+        exit(EXIT_FAILURE);
+    } else if (pid > 0) {
+        auto limit = std::chrono::milliseconds(time_limit);
+
+        int status;
+        
+        if (time_limit == time_limit_inf) {
+            waitpid(pid, &status, 0);
+        } else {
+            auto result = waitpid(pid, &status, WNOHANG);
+            while (result == 0 && std::chrono::steady_clock::now() - start_time < limit) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                result = waitpid(pid, &status, WNOHANG);
+            }     
+            if (result == 0) {
+                __terminate_process(reinterpret_cast<void*>(pid));
+            }   
+            result = waitpid(pid, &status, WNOHANG);              
+        }
+        
+        auto end_time = std::chrono::steady_clock::now();              
+        int exit_status = WEXITSTATUS(status);
+        if (WIFEXITED(status) && exit_status == EXIT_FAILURE) {
+            runtime = -1;
+        } else {
+            runtime = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();   
+        }          
+    } else {
+        runtime = -1;
+        __warn_msg(_err, "Fail to fork.");
+    }
+#endif
+}
+bool __enable_judge_ans(int runtime, int time_limit, ResultState& result) {
+    if (runtime == -1) {
+        result = R_ERROR;
+        return false;
+    } else if (time_limit == time_limit_inf) {
+        return true;
+    } else if (runtime > time_limit) {
+        result = R_TLE;
+        return runtime <= (int)(time_limit * 1.5);
+    } else {
+        return true;
+    }
+}
+
+void __check_result(
+    Path& input_file, 
+    Path& std_output_file,
+    Path& ans_file,
+    Path& testlib_out_file,
+    Path& checker,
+    ResultState& result,
+    std::string& testlib_result) 
+{
+    std::string command = 
+        checker.path() + " " +
+        input_file.path() + " " +
+        ans_file.path() + " " +
+        std_output_file.path() + " 2> " +
+        testlib_out_file.path();
+    system(command.c_str());
+    std::ifstream check_stream(testlib_out_file.path());
+    std::string line;
+    while (check_stream >> line){
+        testlib_result += line;
+        testlib_result += " ";
+    }
+    check_stream.close();
+    if (testlib_result.substr(0,2) == "ok") {
+        result = result == R_TLE ? R_TLEANDAC : R_AC;
+    } else {
+        result = result == R_TLE ? R_TLEANDWA : R_WA;
+    }
+    return;
+} 
+
+void __check_once(
+    int id,
+    Path& program,
+    int time_limit,
+    Path& checker,
+    Path& ans_file,
+    Path& testlib_out_file,
+    int& runtime,
+    ResultState& result,
+    std::string& testlib_result) 
+{
+    Path input_file(__path_join(__current_path(), __end_with(id, In)));
+    Path output_file(__path_join(__current_path(), __end_with(id, Out)));
+    __run_program_with_limit(program, input_file, ans_file, time_limit == time_limit_inf ? time_limit_inf : 2 * time_limit, runtime);
+    if (__enable_judge_ans(runtime, time_limit, result)) {
+        __check_result(
+            input_file, output_file, ans_file, testlib_out_file,
+            checker, result, testlib_result);
+    }   
+}
+
+void __report_total_results(int case_count, OutStream &log, std::vector<int> &results_count)  {
+    __info_msg(_err, "Total results :");
+    __info_msg(_err, "%s : %d / %d", __color_ac(true).c_str(), results_count[R_AC], case_count);
+    __info_msg(_err, "%s : %d / %d", __color_wa(true).c_str(), results_count[R_WA], case_count);
+    __info_msg(_err, "%s : %d / %d", __color_tle(true).c_str(), results_count[R_TLE], case_count);
+    __info_msg(_err, "%s : %d / %d", __color_tle_ac(true).c_str(), results_count[R_TLEANDAC], case_count);
+    __info_msg(_err, "%s : %d / %d", __color_tle_wa(true).c_str(), results_count[R_TLEANDWA], case_count);
+    __info_msg(_err, "%s : %d / %d", __color_run_err(true).c_str(), results_count[R_UNKNOWN] + results_count[R_ERROR], case_count);
+    __info_msg(_err, "The report is in %s file.", log.cpath());
+    _err.println("");
+
+    __info_msg(log, "Total results :");
+    __info_msg(log, "%s : %d / %d", __color_ac(false).c_str(), results_count[R_AC], case_count);
+    __info_msg(log, "%s : %d / %d", __color_wa(false).c_str(), results_count[R_WA], case_count);
+    __info_msg(log, "%s : %d / %d", __color_tle(false).c_str(), results_count[R_TLE], case_count);
+    __info_msg(log, "%s : %d / %d", __color_tle_ac(false).c_str(), results_count[R_TLEANDAC], case_count);
+    __info_msg(log, "%s : %d / %d", __color_tle_wa(false).c_str(), results_count[R_TLEANDWA], case_count);
+    __info_msg(log, "%s : %d / %d", __color_run_err(false).c_str(), results_count[R_UNKNOWN] + results_count[R_ERROR], case_count);
+}
+
+void __report_case_result(OutStream& log, int case_index, int runtime, 
+    ResultState result, std::string testlib_result)  {
+    if (result == R_UNKNOWN || result == R_ERROR) {
+        __run_err_msg(_err, true, case_index);
+        __run_err_msg(log, false, case_index);
+    } else if (result == R_AC) {
+        __ac_msg(_err, true, case_index, runtime);
+        __ac_msg(log, false, case_index, runtime);
+    } else if (result == R_WA) {
+        __wa_msg(_err, true, case_index, runtime, testlib_result);
+        __wa_msg(log, false, case_index, runtime, testlib_result);
+    } else if (result == R_TLEANDAC) {
+        __tle_ac_msg(_err, true, case_index, runtime);
+        __tle_ac_msg(log, false, case_index, runtime);
+    } else if (result == R_TLEANDWA) {
+        __tle_wa_msg(_err, true, case_index, runtime, testlib_result);
+        __tle_wa_msg(log, false, case_index, runtime, testlib_result);
+    } else if (result == R_TLE) {
+        __tle_msg(_err, true, case_index, runtime);
+        __tle_msg(log, false, case_index, runtime);
+    }
+}
+
+void __compare_once(std::map<int, int> case_indices, Path& program, int time_limit, Path& checker) {
+    Path compare_path(__path_join(__current_path(), "cmp"));
+    std::string program_name = program.__file_name();
+    Path ans_folder_path(__path_join(compare_path, program_name));
+    __create_directories(ans_folder_path);
+    Path testlib_out_file(__path_join(ans_folder_path, __end_with("__checker", Logc)));
+    int case_count = case_indices.size();
+    std::vector<int> runtimes(case_count, -1);
+    std::vector<ResultState> results(case_count, R_UNKNOWN);
+    std::vector<std::string> testlib_results(case_count);
+    std::vector<int> results_count(R_Max, 0);
+    __info_msg(_err,"Test results for program %s :",program.cname());
+    Path log_path(__path_join(compare_path, __end_with(program_name, Log)));
+    OutStream log(log_path); 
+    for (auto cas : case_indices) {
+        int real_index = cas.first;
+        int vec_index = cas.second;
+        Path ans_file(__path_join(ans_folder_path, __end_with(real_index, Ans)));
+        __check_once(
+            real_index, program, time_limit, checker, ans_file, testlib_out_file,
+            runtimes[vec_index], results[vec_index], testlib_results[vec_index]);
+        results_count[results[vec_index]]++;
+        __report_case_result(log, real_index, runtimes[vec_index], results[vec_index], testlib_results[vec_index]);
+    }
+    testlib_out_file.__delete_file();
+    __report_total_results(case_count, log, results_count);
+    log.close();
+    return;
+}
+
+template<typename... Args>
+void compare(int start, int end, int time_limit, Path checker_path, Args ...args) {
+    checker_path.full();
+    if (!checker_path.__file_exists()) {
+        __fail_msg(_err, "Checker file %s doesn't exist.", checker_path.cname());
+    }
+    std::vector<Path> programs = __get_compare_files(args...);
+    std::map<int, int> case_indices;
+    int count = 0;
+    for (int i = start; i <= end; i++) {
+        if (__input_file_exists(i) && __output_file_exists(i)) {
+            case_indices[i] = count;
+            count++;
+        }
+    }
+    for(Path& program : programs) {
+        __compare_once(case_indices, program, time_limit, checker_path);
+    } 
+    return;
+}
+
+template<typename... Args>
+void compare(int start, int end, int time_limit, std::string checker_path, Args ...args) {
+    compare(start, end, time_limit, Path(checker_path), args...);
+}
+
+template<typename... Args>
+void compare(int start, int end, int time_limit, const char* checker_path, Args ...args) {
+    compare(start, end, time_limit, Path(checker_path), args...);
+}
+
+template<typename... Args>
+void compare(int start, int end, int time_limit, Checker checker, Args ...args) {
+    Path checker_path = __get_default_checker_file(checker);
+    compare(start, end, time_limit, checker_path, args...);
+}
+
+template<typename... Args>
+void compare(int time_limit, Path checker_path, Args ...args) {
+    checker_path.full();
+    if (!checker_path.__file_exists()) {
+        __fail_msg(_err, "Checker file %s doesn't exist.", checker_path.cname());
+    }
+    std::vector<Path> programs = __get_compare_files(args...);
+    std::map<int, int> case_indices;
+    int count = 0;
+    std::vector<int> inputs = __get_inputs();
+    for (int idx : inputs) {
+        if (__output_file_exists(idx)) {
+            case_indices[idx] = count;
+            count++;
+        }
+    }
+    for (Path& program : programs) {
+        __compare_once(case_indices, program, time_limit, checker_path);
+    } 
+    return;
+}
+
+template<typename... Args>
+void compare(int time_limit, std::string checker_path, Args ...args) {
+    compare(time_limit, Path(checker_path), args...);
+}
+
+template<typename... Args>
+void compare(int time_limit, const char* checker_path, Args ...args) {
+    compare(time_limit, Path(checker_path), args...);
+}
+
+template<typename... Args>
+void compare(int time_limit, Checker checker, Args ...args) {
+    Path checker_path = __get_default_checker_file(checker);
+    compare(time_limit, checker_path, args...);
+}
+
 int __run_checker(Path check_path, Path filename_in, Path filename_out, Path filename_answer) {
     std::string command = std::format("{0} {1} {2} {3}", check_path.path(), filename_in.path(), filename_out.path(), filename_answer.path());
     return system(command.c_str());
-}
-void __check_output(std::string prefix, Path check_path) {
-    std::string filename_in = prefix + ".in";
-    std::string filename_out = prefix + ".out";
-    if (io::Path(filename_in).__file_exists() && io::Path(filename_out).__file_exists()) {
-        check_path.full();
-        std::cerr << std::format("Case {0} : ", prefix);
-        __run_checker(check_path, filename_in, filename_out, filename_out);
-    }
-}
-/**
- * @param 如果当前目录有 ./checker 可执行文件，判断输出是否正确；否则警告 checker 不存在
- */
-void check_output() {
-    if (!io::Path("checker").__file_exists()) {
-        io::__warn_msg(io::_err, "checker doesn't exist.");
-        return;
-    }
-    Path checker_path("checker");
-    checker_path.full();
-    for (int i = 1; i <= 100; i++) {
-        __check_output(std::to_string(i), checker_path);
-    }
 }
 /**
  * @brief 对拍 num_case 组数据，使用 std_path 和 wa_path 两个可执行文件
  * @param std_path 相对可信的可执行文件
  * @param wa_path 待测的可执行文件
  * @param checker 使用的 checker，默认为 wcmp
- * @note 如果是 mycmp，需要在当前目录下有 checker 可执行文件
- * @note 如果是 lcmp, ncmp, nyesno, rcmp4, rcmp6, rcmp9, wcmp，会在 settings::checker_folder_path 下寻找对应的 checker
+ * @note 先在当前文件夹下找 checker 文件，找不到则在 lib 下找对应的 checker 文件
  */
 void compare(int num_case, std::function<void()> gen_func, Path std_path, Path wa_path, Checker checker = wcmp) {
-    if (!std_path.__file_exists()) {
-        io::__fail_msg(io::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
-    }
-    if (!wa_path.__file_exists()) {
-        io::__fail_msg(io::_err, std::format("{0} doesn't exist.", wa_path.cname()).c_str());
-    }
     std_path.full();
     wa_path.full();
-    std::string path_str;
-    if (checker == mycmp) {
-        path_str = "./checker";
-    } else {
-        path_str = settings::checker_folder_path + checker_name[checker];
-    }
-    Path checker_path(path_str);
-    checker_path.full();
-    std::cerr << checker_path.path() << std::endl;
+    Path checker_path = __get_default_checker_file(checker);
+    io::__success_msg(io::_err, "checker path: %s", checker_path.cname());
     for (int index = 1; index <= num_case; index++) {
         std::string filename_in = "hack.in";
         freopen(filename_in.c_str(), "w", stdout);
@@ -6164,3 +6742,6 @@ using generator::rand_graph::basic::RandomFather;
 using generator::rand_graph::basic::Pruefer;
 }
 }
+#ifdef _WIN32
+#undef mkdir
+#endif

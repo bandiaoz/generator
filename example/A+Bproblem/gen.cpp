@@ -49,10 +49,11 @@ int main() {
         }
     }
 
-    fill_outputs_exe("./std");
+    copy_input("./handmade");
     validate("./val");
+    fill_outputs_exe("./std");
     show_output_first_line();
-    check_output();
+    compare(3000, mycmp, "./std", "./sol/wa");
 
     return 0;
 }

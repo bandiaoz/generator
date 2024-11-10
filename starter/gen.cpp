@@ -26,10 +26,11 @@ int main() {
         }
     }
 
+    copy_input("./handmade_");
     validate("./val");
     fill_outputs_exe("./std");
     show_output_first_line();
-    check_output();
+    compare(3000, mycmp, "./std", "./wa");
 
     return 0;
 }

@@ -10,7 +10,7 @@ int main() {
     std::cin >> a >> b;
 
     std::srand(std::time(nullptr));
-    if (rand() % 5 == 0) {
+    if (b % 2 == 0) {
         std::cout << a + b + 1 << '\n';
     } else {
         std::cout << a + b << '\n';

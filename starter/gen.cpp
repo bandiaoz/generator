@@ -26,7 +26,7 @@ int main() {
         }
     }
 
-    copy_input("./handmade_");
+    copy_input("./handmade");
     validate("./val");
     fill_outputs_exe("./std");
     show_output_first_line();

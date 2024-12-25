@@ -14,8 +14,8 @@ int main() {
         println(a, b);
     };
 
-    // compare(100, gen, "./std", "./wa", mycmp);
-    compare(100, gen, "./std", "./wa");
+    // compare(100, gen, "./std", "./sol/wa", mycmp);
+    compare(100, gen, "./std", "./sol/wa");
     system("rm hack.in");
 
     return 0;

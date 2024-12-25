@@ -22,15 +22,15 @@ int main() {
         out >> ok;
         if (ok == "NO") {
             cases--;
-            std::remove(std::format("{}.in", index).c_str());
+            std::remove(std::format("data/{}.in", index).c_str());
         }
     }
 
-    copy_input("./handmade");
+    copy_input("./data/handmade");
     validate("./val");
     fill_outputs_exe("./std");
     show_output_first_line();
-    compare(3000, mycmp, "./std", "./wa");
+    compare(3000, mycmp, "./std", "./sol/wa");
 
     return 0;
 }

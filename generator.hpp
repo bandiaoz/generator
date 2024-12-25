@@ -521,10 +521,17 @@ void __close_input_file_to_console() {
 }
 
 /**
+ * @brief 将数据存放到 data 文件夹下
+ */
+Path __data_path() {
+    return __current_path().join("data");
+}
+
+/**
  * @brief 根据 func 生成输入文件，编号为 index，并检查输入文件非空
  */
 void __write_input_file(int index, std::function<void()> func, std::string format, bool need_seed) {
-    std::string filename = std::to_string(index) + ".in";
+    std::string filename = __data_path().join(__end_with(index, In)).path();
     freopen(filename.c_str(), "w", stdout);
     __fake_arg(format, need_seed);
     try {
@@ -571,7 +578,7 @@ void make_input_seed(int index, std::function<void()> func, const char* format =
 std::vector<int> __get_inputs() {
     std::vector<int> inputs;
     for (int i = 1; i <= 100; i++) {
-        if (io::Path(std::to_string(i) + ".in").__file_exists()) {
+        if (io::Path(__data_path().join(__end_with(i, In))).__file_exists()) {
             inputs.push_back(i);
         }
     }
@@ -581,12 +588,10 @@ std::vector<int> __get_inputs() {
  * @brief 判断 x.in 输入文件是否存在
  */
 bool __input_file_exists(int x) {
-    Path file_path = __path_join(__current_path(), __end_with(x, In));
-    return file_path.__file_exists();
+    return io::Path(__data_path().join(__end_with(x, In))).__file_exists();
 }
 bool __output_file_exists(int x) {
-    Path file_path = __path_join(__current_path(), __end_with(x, Out));
-    return file_path.__file_exists();
+    return io::Path(__data_path().join(__end_with(x, Out))).__file_exists();
 }
 /**
  * @brief 获得下一个空缺的输入文件编号
@@ -605,7 +610,7 @@ void __fill_inputs_impl(int number, std::function<void()> func, std::string form
     for (int index = 1; sum; index++) {
         if (!__input_file_exists(index)) {
             sum--;
-            std::string filename = std::to_string(index) + ".in";
+            std::string filename = __data_path().join(__end_with(index, In)).path();
             freopen(filename.c_str(), "w", stdout);
             __fake_arg(format, need_seed);
             try {
@@ -649,11 +654,11 @@ void fill_input_seed(std::function<void()> func, const char* format = "", ...) {
  * @brief 根据 func 生成输出文件，编号为 index
  */
 void __write_output_file(int index, std::function<void()> std_func) {
-    if (!io::Path(std::to_string(index) + ".in").__file_exists()) {
+    if (!io::Path(__data_path().join(__end_with(index, In))).__file_exists()) {
         io::__fail_msg(io::_err, std::format("{0}.in doesn't exist.", index).c_str());
     }
-    std::string filename_in = std::to_string(index) + ".in";
-    std::string filename_out = std::to_string(index) + ".out";
+    std::string filename_in = __data_path().join(__end_with(index, In)).path();
+    std::string filename_out = __data_path().join(__end_with(index, Out)).path();
     freopen(filename_in.c_str(), "r", stdin);
     freopen(filename_out.c_str(), "w", stdout);
     try {
@@ -670,7 +675,7 @@ void __write_output_file(int index, std::function<void()> std_func) {
  */
 std::ifstream make_output(int index, std::function<void()> std_func) {
     __write_output_file(index, std_func);
-    std::ifstream file(std::to_string(index) + ".out");
+    std::ifstream file(__data_path().join(__end_with(index, Out)).path());
     if (!file.is_open()) {
         io::__fail_msg(io::_err, std::format("output file {0}.out is empty.", index).c_str());
     }
@@ -692,7 +697,7 @@ void make_outputs(int start, int end, std::function<void()> std_func) {
 void fill_outputs(std::function<void()> std_func, bool cover_exist = true) {
     std::vector<int> inputs = __get_inputs();
     for (int i : inputs) {
-        if (!cover_exist && io::Path(std::to_string(i) + ".out").__file_exists()) {
+        if (!cover_exist && io::Path(__data_path().join(__end_with(i, Out))).__file_exists()) {
             continue;
         }
         __write_output_file(i, std_func);
@@ -706,11 +711,11 @@ void __make_output_exe(int index, io::Path std_path) {
     if (!std_path.__file_exists()) {
         io::__fail_msg(io::_err, std::format("{0} doesn't exist.", std_path.cname()).c_str());
     }
-    std::string filename_in = std::to_string(index) + ".in";
+    std::string filename_in = __data_path().join(__end_with(index, In)).path();
     if (!io::Path(filename_in).__file_exists()) {
         io::__fail_msg(io::_err, std::format("{0} doesn't exist.", filename_in).c_str());
     }
-    std::string filename_out = std::to_string(index) + ".out";
+    std::string filename_out = __data_path().join(__end_with(index, Out)).path();
     std::string command = std::format("{0} < {1} > {2}", std_path.path(), filename_in, filename_out);
     if (int return_code = system(command.c_str()); return_code != 0) {
         io::__fail_msg(io::_err, std::format("An exception occurred while creating the {}.", filename_out).c_str());
@@ -724,7 +729,7 @@ void __make_output_exe(int index, io::Path std_path) {
 template <typename T>
 std::ifstream make_output_exe(int index, T path) {
     __make_output_exe(index, io::Path(path));
-    std::ifstream file(std::to_string(index) + ".out");
+    std::ifstream file(__data_path().join(__end_with(index, Out)).path());
     if (!file.is_open()) {
         io::__fail_msg(io::_err, std::format("output file {0}.out is empty.", index).c_str());
     }
@@ -750,7 +755,7 @@ void fill_outputs_exe(T path, bool cover_exist = true) {
     io::Path std_path(path);
     std::vector<int> inputs = __get_inputs();
     for (int index : inputs) {
-        if (!cover_exist && io::Path(std::to_string(index) + ".out").__file_exists()) {
+        if (!cover_exist && io::Path(__data_path().join(__end_with(index, Out))).__file_exists()) {
             continue;
         }
         __make_output_exe(index, io::Path(path));
@@ -761,7 +766,7 @@ void fill_outputs_exe(T path, bool cover_exist = true) {
  */
 std::string __first_line_output(int index, int LENGTH) {
     std::string first_line_output;
-    std::ifstream file(std::to_string(index) + ".out");
+    std::ifstream file(__data_path().join(__end_with(index, Out)).path());
     std::getline(file, first_line_output);
     if (first_line_output.empty()) {
         io::__fail_msg(io::_err, std::format("output file {0}.out is empty.", index).c_str());
@@ -776,7 +781,7 @@ std::string __first_line_output(int index, int LENGTH) {
  */
 void show_output_first_line(int LENGTH = 20) {
     for (int i = 1; i <= 100; i++) {
-        if (io::Path(std::to_string(i) + ".out").__file_exists()) {
+        if (io::Path(__data_path().join(__end_with(i, Out))).__file_exists()) {
             io::__success_msg(io::_err, std::format("{0}.out: {1}", i, __first_line_output(i, LENGTH)).c_str());
         }
     }
@@ -793,7 +798,7 @@ void copy_input(std::string folder) {
     for (const auto& entry : std::filesystem::directory_iterator(folder_path)) {
         if (entry.path().extension() == ".in") {
             std::string new_filename = __end_with(std::to_string(get_next_input()), In);
-            std::filesystem::copy_file(entry.path(), new_filename);
+            std::filesystem::copy_file(entry.path(), __data_path().join(new_filename).path());
         }
     }
 }
@@ -847,8 +852,10 @@ Path __get_default_checker_file(Checker checker) {
         Path folder_path(__full_path(__path_join(__lib_path().__folder_path(), "checker")));
     #ifdef _WIN32
         checker_path.change(__path_join(folder_path, "windows",  __end_with(checker_name[checker], Exe)));
-    #else
+    #elif __APPLE__
         checker_path.change(__path_join(folder_path, "mac", checker_name[checker]));
+    #else
+        checker_path.change(__path_join(folder_path, "linux", checker_name[checker]));
     #endif
     }
     return checker_path;
@@ -1060,8 +1067,8 @@ void __check_once(
     ResultState& result,
     std::string& testlib_result) 
 {
-    Path input_file(__path_join(__current_path(), __end_with(id, In)));
-    Path output_file(__path_join(__current_path(), __end_with(id, Out)));
+    Path input_file(__path_join(io::__data_path(), __end_with(id, In)));
+    Path output_file(__path_join(io::__data_path(), __end_with(id, Out)));
     __run_program_with_limit(program, input_file, ans_file, time_limit == time_limit_inf ? time_limit_inf : 2 * time_limit, runtime);
     if (__enable_judge_ans(runtime, time_limit, result)) {
         __check_result(
@@ -1275,7 +1282,8 @@ void validate(Path val_path) {
         if (!io::__input_file_exists(index)) {
             continue;
         }
-        std::string command = std::format("{0} < {1}.in", val_path.path(), index);
+        std::string filename = io::__data_path().join(io::__end_with(index, In)).path();
+        std::string command = std::format("{0} < {1}", val_path.path(), filename);
         if (int return_code = system(command.c_str()); return_code != 0) {
             io::__fail_msg(io::_err, std::format("Validation failed in case {0}.", index).c_str());
         }

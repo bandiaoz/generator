@@ -2,8 +2,7 @@ import os
 import sys
 
 def compile_cpp(
-    file_path,
-    path="/Users/chenjinglong/algorithm_competition/nowcoder/generator",
+    file_path
 ):
     """
     编译 cpp 文件，获得同名可执行文件；例如 std.cpp -> std, checker.cc -> checker
@@ -12,8 +11,9 @@ def compile_cpp(
     os.system(
         f"g++-14 {file_path} \
         -o {prefix} -O2 -std=c++20 \
-        -Wl,-stack_size -Wl,0x10000000\
-        -I{path}"
+        -Wl,-stack_size -Wl,0x10000000 \
+        -I/Users/chenjinglong/algorithm_competition/nowcoder/generator \
+        -I/Users/chenjinglong/algorithm_competition/template/CP-algo"
     )
 
 cpp_files_prefix = []
@@ -38,9 +38,7 @@ def remove(file_names):
 
 def clear():
     # 删除所有临时文件
-    for file_name in os.listdir("."):
-        if file_name.endswith(".in") and file_name[:-3] != "hack":
-            os.system(f"rm {file_name}")
+    remove(["data/*.in", "data/*.out"])
     remove(["*.out", "*.ans"])
     remove(cpp_files_prefix)
     cpp_files_prefix.clear()
@@ -49,14 +47,16 @@ def clear():
 def generator():
     # 删除之前生成的文件
     clear()
-    remove(["data.zip"])
+    if not os.path.exists("./data"):
+        os.makedirs("./data")
+    remove(["./data/data.zip"])
 
     compile_all_cpp(["compare.cpp"])
     # 生成 *.in 和 *.out 文件
     os.system("./gen")
 
     # 打包成 data.zip
-    os.system("zip -q data.zip *.in *.out checker.cc")
+    os.system("zip -q ./data/data.zip ./data/*.in ./data/*.out checker.cc")
     clear()
 
 def compare():

@@ -34,8 +34,7 @@ int main() {
     });
 
     // 对输出有要求的数据
-    int cases = 3;
-    while (cases--) {
+    for (int cases = 0; cases < 3; cases++) {
         int index = fill_input([&]() {
             int a = rand_int(1, limit);
             int b = rand_int(1, limit);
@@ -45,11 +44,12 @@ int main() {
         int ans;
         out >> ans;
         if (ans % 2 == 1) {
-            cases++;
+            cases--;
+            std::remove(std::format("data/{}.in", index).c_str());
         }
     }
 
-    copy_input("./handmade");
+    copy_input("./data/handmade");
     validate("./val");
     fill_outputs_exe("./std");
     show_output_first_line();

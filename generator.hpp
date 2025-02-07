@@ -788,6 +788,7 @@ void show_output_first_line(int LENGTH = 20) {
 }
 /**
  * @brief 将 folder 文件夹下的 in 文件添加到测试数据中
+ * @note 如果 in 文件换行是 '\r\n'，则需要使用 '\n' 替换
  */
 void copy_input(std::string folder) {
     if (!io::Path(folder).__directory_exists()) {
@@ -798,7 +799,18 @@ void copy_input(std::string folder) {
     for (const auto& entry : std::filesystem::directory_iterator(folder_path)) {
         if (entry.path().extension() == ".in") {
             std::string new_filename = __end_with(std::to_string(get_next_input()), In);
-            std::filesystem::copy_file(entry.path(), __data_path().join(new_filename).path());
+            // std::filesystem::copy_file(entry.path(), __data_path().join(new_filename).path());
+            std::ifstream in_file(entry.path());
+            std::ofstream out_file(__data_path().join(new_filename).path());
+            std::string line;
+            while (std::getline(in_file, line)) {
+                if (!line.empty() && line.back() == '\r') {
+                    line.pop_back();
+                }
+                out_file << line << '\n';
+            }
+            in_file.close();
+            out_file.close();
         }
     }
 }
@@ -1265,6 +1277,8 @@ void compare(int num_case, std::function<void()> gen_func, Path std_path, Path w
         int return_code = __run_checker(checker_path, filename_in, filename_out, filename_ans);
         if (return_code != 0) {
             io::__fail_msg(io::_err, std::format("Wrong Answer in case {0}.", index).c_str());
+        } else {
+            io::__success_msg(io::_err, std::format("Accepted in case {0}.", index).c_str());
         }
     }
 }

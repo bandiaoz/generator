@@ -5,3 +5,6 @@
 *.in
 *.out
 *.ans
+
+starter/starter.py
+starter/tasks.json

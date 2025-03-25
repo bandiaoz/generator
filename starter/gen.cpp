@@ -30,7 +30,7 @@ int main() {
     validate("./val");
     fill_outputs_exe("./std");
     show_output_first_line();
-    compare(3000, mycmp, "./std", "./sol/wa");
+    compare(3000, ncmp, "./std");
 
     return 0;
 }

@@ -1,0 +1,191 @@
+#ifndef __CORE_MODE__
+#define __CORE_MODE__
+
+#include <iostream>
+#include <string>
+#include <tuple>
+#include <vector>
+#include <type_traits>
+
+/**
+ * @brief 核心模式输入输出
+ * @note 不允许字符串中出现引号，否则会导致解析错误。
+ */
+namespace CoreMode {
+    template <typename T>
+    struct is_vector : std::false_type {};
+    template <typename U, typename Alloc>
+    struct is_vector<std::vector<U, Alloc>> : std::true_type {};
+
+    struct CoreModeInputHelper {
+        static const std::string left_bracket;
+        static const std::string right_bracket;
+        static const std::string comma;
+
+        /**
+         * @brief 判断当前两个括号是否匹配
+         */
+        static bool _isBracketMatch(char left, char right) {
+            int left_pos = left_bracket.find(left);
+            int right_pos = right_bracket.find(right);
+            return left_pos != std::string::npos && left_pos == right_pos;
+        }
+        /**
+         * @brief 找到所有分割变量的逗号位置
+         * @note 该函数扫描输入字符串，返回所有处于最外层（即不在任何括号内部）位置的逗号索引。
+         */
+        static std::vector<size_t> _findCommaPositions(const std::string &data) {
+            std::vector<size_t> positions;
+            std::vector<char> bracketStack;
+            for (size_t i = 0; i < data.size(); i++) {
+                char current = data[i];
+                if (right_bracket.find(current) != std::string::npos) {
+                    // 如果是右括号，则尝试弹出栈顶匹配的左括号
+                    if (!bracketStack.empty() && _isBracketMatch(bracketStack.back(), current)) {
+                        bracketStack.pop_back();
+                        continue;
+                    }
+                }
+                if (left_bracket.find(current) != std::string::npos) {
+                    // 如果是左括号，则压入栈中
+                    bracketStack.push_back(current);
+                    continue;
+                }
+                if (current == comma[0] && bracketStack.empty()) {
+                    // 如果当前字符是逗号，且不在任何括号内部，则记录其位置
+                    positions.push_back(i);
+                    continue;
+                }
+            }
+            return positions;
+        }
+        /**
+         * @brief 分割字符串，返回所有分割好的变量
+         */
+        static std::vector<std::string> _split(const std::string &data) {
+            std::vector<size_t> commaPositions = _findCommaPositions(data);
+            std::vector<std::string> result;
+            size_t lastPos = 0;
+            for (size_t pos : commaPositions) {
+                result.push_back(data.substr(lastPos, pos - lastPos));
+                lastPos = pos + 1;
+            }
+            result.push_back(data.substr(lastPos));
+            return result;
+        }
+        /**
+         * @brief 对基础变量进行解析
+         */
+        template <typename T>
+        static T _parseSingleVariable(const std::string &data) {
+            throw std::invalid_argument("Not implemented");
+        }
+        /**
+         * @brief 对容器变量进行解析
+         */
+        template <typename T>
+        static std::vector<T> _parseContainerVariable(const std::string &data) {
+            if (data.size() < 2 || data.front() != '[' || data.back() != ']') {
+                throw std::invalid_argument("Invalid container");
+            }
+            std::vector<T> result;
+            std::vector<std::string> splitData = _split(data.substr(1, data.size() - 2));
+            for (const auto &item : splitData) {
+                if constexpr (is_vector<T>::value) {
+                    using ElementType = typename T::value_type;
+                    result.push_back(_parseContainerVariable<ElementType>(item));
+                } else {
+                    result.push_back(_parseSingleVariable<T>(item));
+                }
+            }
+            return result;
+        }
+    };
+    const std::string CoreModeInputHelper::left_bracket = "{[(\"";
+    const std::string CoreModeInputHelper::right_bracket = "}])\"";
+    const std::string CoreModeInputHelper::comma = ",";
+    template <>
+    std::string CoreModeInputHelper::_parseSingleVariable<std::string>(const std::string &data) { 
+        if (data.size() < 2 || data.front() != '\"' || data.back() != '\"') {
+            throw std::invalid_argument("Invalid string");
+        }
+        return data.substr(1, data.size() - 2); 
+    }
+    template <>
+    int CoreModeInputHelper::_parseSingleVariable<int>(const std::string &data) { return std::stoi(data); }
+    template <>
+    double CoreModeInputHelper::_parseSingleVariable<double>(const std::string &data) { return std::stod(data); }
+    template <>
+    float CoreModeInputHelper::_parseSingleVariable<float>(const std::string &data) { return std::stof(data); }
+    template <>
+    long long CoreModeInputHelper::_parseSingleVariable<long long>(const std::string &data) { return std::stoll(data); }
+    template <>
+    bool CoreModeInputHelper::_parseSingleVariable<bool>(const std::string &data) { return data == "true"; }
+    template <>
+    char CoreModeInputHelper::_parseSingleVariable<char>(const std::string &data) { return data[0]; }
+
+    template <typename T>
+    typename std::enable_if<!is_vector<T>::value, T>::type parse_helper(const std::string &token) {
+        return CoreModeInputHelper::_parseSingleVariable<T>(token);
+    }
+    template <typename T>
+    typename std::enable_if<is_vector<T>::value, T>::type parse_helper(const std::string &token) {
+        using ElementType = typename T::value_type;
+        return CoreModeInputHelper::_parseContainerVariable<ElementType>(token);
+    }
+    template <typename... Args, std::size_t... Is>
+    std::tuple<Args...> read_impl(const std::vector<std::string>& tokens, std::index_sequence<Is...>) {
+        return std::make_tuple(parse_helper<Args>(tokens[Is])...);
+    }
+    /**
+     * @brief 使用标准输入读取变量，将所有的变量解析为元组返回
+     * @example auto [n, m] = CoreMode::read<int, int>();
+     * @example auto [s, v] = CoreMode::read<std::string, std::vector<int>>();
+     */
+    template <typename... Args>
+    std::tuple<Args...> read() {
+        std::string data;
+        std::getline(std::cin, data);
+        auto tokens = CoreModeInputHelper::_split(data);
+        if (tokens.size() != sizeof...(Args)) {
+            throw std::invalid_argument("Argument count mismatch");
+        }
+        return read_impl<Args...>(tokens, std::make_index_sequence<sizeof...(Args)>{});
+    }
+
+    /**
+     * @brief 处理单个参数：输出到标准输出
+     */
+    template <typename T>
+    static void print(const T &value) {
+        if constexpr (is_vector<T>::value) {
+            std::cout << "[";
+            for (size_t i = 0; i < value.size(); i++) {
+                print(value[i]);
+                if (i < value.size() - 1) {
+                    std::cout << ",";
+                }
+            }
+            std::cout << "]";
+        } else {
+            std::cout << value;
+        }
+    }
+    template <>
+    void print<std::string>(const std::string &value) { std::cout << "\"" << value << "\""; }
+    template <>
+    void print<bool>(const bool &value) { std::cout << (value ? "true" : "false"); }
+
+    template <typename... Args>
+    static void print(const Args&... args) {
+        bool first = true;
+        ((first ? (first = false, print(args)) : (std::cout << ",", print(args))), ...);
+    }
+    template<typename... Args>
+    static void println(const Args&... args) {
+        print(args...);
+        std::cout << std::endl;
+    }
+}  // namespace CoreMode
+
+#endif

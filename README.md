@@ -25,17 +25,17 @@ def compile_cpp(
 
 cpp_files_prefix = []
 def compile_all_cpp(exclude=[]):
-    for root, dirs, files in os.walk("."):
-        for file in files:
-            if file in exclude:
-                continue
-            file_path = os.path.join(root, file)
-            if file.endswith(".cpp"):
-                cpp_files_prefix.append(".".join(file_path.split(".")[:-1]))
-                compile_cpp(file_path)
-            elif file.endswith(".cc"):
-                cpp_files_prefix.append(".".join(file_path.split(".")[:-1]))
-                compile_cpp(file_path)
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor() as executor:
+        for root, dirs, files in os.walk("."):
+            for file in files:
+                if file in exclude:
+                    continue
+                file_path = os.path.join(root, file)
+                if file.endswith(".cpp") or file.endswith(".cc"):
+                    cpp_files_prefix.append(".".join(file_path.split(".")[:-1]))
+                    # 使用线程池编译
+                    executor.submit(compile_cpp, file_path)
     
 
 def remove(file_names):

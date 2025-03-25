@@ -197,6 +197,10 @@ namespace CoreMode {
     bool CoreModeInputHelper::_parseSingleVariable<bool>(const std::string &data) { return data == "true"; }
     template <>
     char CoreModeInputHelper::_parseSingleVariable<char>(const std::string &data) { return data[0]; }
+    template <>
+    ListNode* CoreModeInputHelper::_parseSingleVariable<ListNode*>(const std::string &data) { return _parseList(data); }
+    template <>
+    TreeNode* CoreModeInputHelper::_parseSingleVariable<TreeNode*>(const std::string &data) { return _parseTree(data); }
 
     template <typename T>
     typename std::enable_if<!is_vector<T>::value, T>::type parse_helper(const std::string &token) {
@@ -231,24 +235,55 @@ namespace CoreMode {
      * @brief 处理单个参数：输出到标准输出
      */
     template <typename T>
-    static void print(const T &value) {
-        if constexpr (is_vector<T>::value) {
-            std::cout << "[";
-            for (size_t i = 0; i < value.size(); i++) {
-                print(value[i]);
-                if (i < value.size() - 1) {
-                    std::cout << ",";
-                }
-            }
-            std::cout << "]";
-        } else {
-            std::cout << value;
+    void print(T value) { std::cout << value; }
+    void print(const std::string &value) { std::cout << "\"" << value << "\""; }
+    template <>
+    void print<bool>(bool value) { std::cout << (value ? "true" : "false"); }
+    template <>
+    void print<ListNode*>(ListNode *value) {
+        std::cout << "{";
+        while (value) {
+            std::cout << value->val;
+            value = value->next;
+            if (value) std::cout << ",";
         }
+        std::cout << "}";
     }
     template <>
-    void print<std::string>(const std::string &value) { std::cout << "\"" << value << "\""; }
-    template <>
-    void print<bool>(const bool &value) { std::cout << (value ? "true" : "false"); }
+    void print<TreeNode*>(TreeNode *value) {
+        std::cout << '{';
+        std::queue<TreeNode *> q;
+        int number = 0;
+        if (value) {
+            q.push(value);
+            number++;
+        }
+        while (number) {
+            TreeNode *node = q.front();
+            q.pop();
+            if (node) number--;
+            if (node == nullptr) {
+                std::cout << "#";
+            } else {
+                std::cout << node->val;
+                q.push(node->left);
+                if (node->left) number++;
+                q.push(node->right);
+                if (node->right) number++;
+            }
+            if (number) std::cout << ",";
+        }
+        std::cout << '}';
+    }
+    template <typename T>
+    void print(const std::vector<T> &value) {
+        std::cout << "[";
+        for (size_t i = 0; i < value.size(); i++) {
+            if (i > 0) std::cout << ",";
+            print(value[i]);
+        }
+        std::cout << "]";
+    }
     template <typename... Args>
     static void print(const Args&... args) {
         bool first = true;

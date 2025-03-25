@@ -10,6 +10,11 @@
 /**
  * @brief 核心模式输入输出
  * @note 不允许字符串中出现引号，否则会导致解析错误。
+ * @example 自动读取 Solution::twoSum 函数的参数，并运行该函数，打印函数的返回结果
+ * auto args = CoreMode::read_function_args<decltype(&Solution::twoSum)>();
+ * CoreMode::println(std::apply([](auto&&... params) {
+ *     return Solution().twoSum(params...);
+ * }, args));
  */
 namespace CoreMode {
     template <typename T>
@@ -185,6 +190,36 @@ namespace CoreMode {
     static void println(const Args&... args) {
         print(args...);
         std::cout << std::endl;
+    }
+
+    // 函数特征辅助结构
+    template<typename T>
+    struct function_traits;
+
+    // 成员函数特化版本
+    template<typename ClassType, typename ReturnType, typename... Args>
+    struct function_traits<ReturnType(ClassType::*)(Args...)> {
+        using return_type = ReturnType;
+        using args_tuple = std::tuple<std::remove_reference_t<Args>...>;
+        static constexpr size_t arity = sizeof...(Args);
+    };
+
+    // 为 const 成员函数特化
+    template<typename ClassType, typename ReturnType, typename... Args>
+    struct function_traits<ReturnType(ClassType::*)(Args...) const> {
+        using return_type = ReturnType;
+        using args_tuple = std::tuple<std::remove_reference_t<Args>...>;
+        static constexpr size_t arity = sizeof...(Args);
+    };
+
+    // 自动读取函数参数的辅助函数
+    template<typename Func>
+    auto read_function_args() {
+        using traits = function_traits<Func>;
+        using args_tuple = typename traits::args_tuple;
+        return std::apply([](auto... types) {
+            return read<std::remove_reference_t<decltype(types)>...>();
+        }, args_tuple{});
     }
 }  // namespace CoreMode
 

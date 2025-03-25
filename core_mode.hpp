@@ -6,10 +6,25 @@
 #include <tuple>
 #include <vector>
 #include <type_traits>
+#include <queue>
+#include <cassert>
+
+struct ListNode {
+    int val;
+	struct ListNode *next;
+	ListNode(int x) : val(x), next(nullptr) {}
+};
+
+struct TreeNode {
+	int val;
+    struct TreeNode *left;
+    struct TreeNode *right;
+    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+};
 
 /**
  * @brief 核心模式输入输出
- * @note 不允许字符串中出现引号，否则会导致解析错误。
+ * @note 不允许字符串中出现引号，否则会导致解析错误。不要有多余的空格，仅允许在字符串变量内部出现空格。
  * @example 自动读取 Solution::twoSum 函数的参数，并运行该函数，打印函数的返回结果
  * auto args = CoreMode::read_function_args<decltype(&Solution::twoSum)>();
  * CoreMode::println(std::apply([](auto&&... params) {
@@ -66,6 +81,7 @@ namespace CoreMode {
         }
         /**
          * @brief 分割字符串，返回所有分割好的变量
+         * @note 该函数会忽略所有在括号内部的逗号
          */
         static std::vector<std::string> _split(const std::string &data) {
             std::vector<size_t> commaPositions = _findCommaPositions(data);
@@ -104,6 +120,59 @@ namespace CoreMode {
                 }
             }
             return result;
+        }
+        /**
+         * @brief 对链表进行解析
+         * @note 字符串格式为：{1,2,3,4,5}
+         */
+        static ListNode* _parseList(const std::string &data) {
+            if (data.size() < 2 || data.front() != '{' || data.back() != '}') {
+                throw std::invalid_argument("Invalid list");
+            }
+            std::vector<std::string> splitData = _split(data.substr(1, data.size() - 2));
+            ListNode *dummyRoot = new ListNode(0), *ptr = dummyRoot;
+            for (const auto &item : splitData) {
+                ptr->next = new ListNode(std::stoi(item));
+                ptr = ptr->next;
+            }
+            ListNode *head = dummyRoot->next;
+            delete dummyRoot;
+            return head;
+        }
+        /**
+         * @brief 对二叉树进行解析
+         * @note 字符串格式为：{1,2,3,#,#,4,#,#,5,#,#}
+         */
+        static TreeNode* _parseTree(const std::string &data) {
+            if (data.size() < 2 || data.front() != '{' || data.back() != '}') {
+                throw std::invalid_argument("Invalid tree");
+            }
+            TreeNode *root = nullptr;
+            std::queue<TreeNode *> nodeQueue;
+            std::vector<std::string> splitData = _split(data.substr(1, data.size() - 2));
+            for (int i = 0; i < splitData.size(); i++) {
+                const auto &item = splitData[i];
+                if (nodeQueue.empty()) {
+                    root = new TreeNode(std::stoi(item));
+                    nodeQueue.push(root);
+                } else {
+                    if (item != "#") {
+                        TreeNode *ptr = new TreeNode(std::stoi(item));
+                        nodeQueue.front()->left = ptr;
+                        nodeQueue.push(ptr);
+                    }
+                    if (i + 1 < splitData.size()) {
+                        const auto next_item = splitData[i + 1];
+                        if (next_item != "#") {
+                            TreeNode *ptr = new TreeNode(std::stoi(next_item));
+                            nodeQueue.front()->right = ptr;
+                            nodeQueue.push(ptr);
+                        }
+                    }
+                    nodeQueue.pop();
+                }
+            }
+            return root;
         }
     };
     const std::string CoreModeInputHelper::left_bracket = "{[(\"";
@@ -180,7 +249,6 @@ namespace CoreMode {
     void print<std::string>(const std::string &value) { std::cout << "\"" << value << "\""; }
     template <>
     void print<bool>(const bool &value) { std::cout << (value ? "true" : "false"); }
-
     template <typename... Args>
     static void print(const Args&... args) {
         bool first = true;

@@ -195,7 +195,6 @@ namespace CoreMode {
     // 函数特征辅助结构
     template<typename T>
     struct function_traits;
-
     // 成员函数特化版本
     template<typename ClassType, typename ReturnType, typename... Args>
     struct function_traits<ReturnType(ClassType::*)(Args...)> {
@@ -203,7 +202,6 @@ namespace CoreMode {
         using args_tuple = std::tuple<std::remove_reference_t<Args>...>;
         static constexpr size_t arity = sizeof...(Args);
     };
-
     // 为 const 成员函数特化
     template<typename ClassType, typename ReturnType, typename... Args>
     struct function_traits<ReturnType(ClassType::*)(Args...) const> {
@@ -211,7 +209,6 @@ namespace CoreMode {
         using args_tuple = std::tuple<std::remove_reference_t<Args>...>;
         static constexpr size_t arity = sizeof...(Args);
     };
-
     // 自动读取函数参数的辅助函数
     template<typename Func>
     auto read_function_args() {
